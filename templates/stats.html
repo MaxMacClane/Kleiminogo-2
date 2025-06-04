@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика опроса - ДНП "Клеймёново-2"</title>
+    
+    <!-- Подключаем CSS Bokeh -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.bokeh.org/bokeh/release/bokeh-3.0.3.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(180deg, #eaf0fb 0%, #f7faff 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px 30px 30px;
+            border-radius: 28px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.18), 0 1.5px 8px rgba(0,0,0,0.07);
+            backdrop-filter: blur(10px);
+            position: relative;
+            animation: fadeInDown 0.7s cubic-bezier(.39,.58,.57,1) 0.1s both;
+        }
+
+        @keyframes fadeInDown {
+            0% {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+            100% {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        header h1 {
+            color: #fff;
+            font-size: 2.8em;
+            margin-bottom: 12px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 8px rgba(102,126,234,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        header .header-icon {
+            font-size: 1.3em;
+            margin-right: 8px;
+            filter: drop-shadow(0 2px 4px rgba(102,126,234,0.18));
+        }
+
+        header p {
+            color: #e0e6f6;
+            font-size: 1.25em;
+            margin-bottom: 0;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            text-shadow: 0 1px 4px rgba(102,126,234,0.10);
+        }
+
+        .stats-summary {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-summary h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .summary-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .summary-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* Секция "Интерактивная аналитика" как карточка */
+        .charts-section {
+            background: rgba(255, 255, 255, 0.97);
+            padding: 35px 30px 30px 30px;
+            border-radius: 28px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.13), 0 1.5px 8px rgba(0,0,0,0.07);
+            backdrop-filter: blur(10px);
+            min-height: 2500px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.7s cubic-bezier(.39,.58,.57,1) 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            100% {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .charts-section h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.1em;
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Независимые графики с resize */
+        .chart-container {
+            position: absolute;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            cursor: move;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+            border: 3px solid transparent;
+            resize: both;
+            overflow: auto;
+            min-width: 300px;
+            min-height: 250px;
+        }
+
+        .chart-container:hover {
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .chart-container.dragging {
+            z-index: 1000;
+            transform: rotate(2deg) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Заголовки графиков */
+        .chart-container .bk-title {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #2c3e50 !important;
+            margin-bottom: 10px !important;
+        }
+
+        /* Красивое позиционирование графиков по умолчанию с достаточным пространством */
+        .chart-snt-support {
+            top: 80px;
+            left: 50px;
+            width: 600px;
+            height: 600px;
+        }
+
+        .chart-financial-ready {
+            top: 80px;
+            right: 50px;
+            width: 600px;
+            height: 600px;
+        }
+
+        .chart-concerns {
+            top: 750px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1200px;
+            height: 450px;
+        }
+
+        .chart-fees {
+            top: 1280px;
+            left: 50px;
+            width: 800px;
+            height: 650px;
+        }
+
+        .chart-participation {
+            top: 1280px;
+            right: 50px;
+            width: 900px;
+            height: 550px;
+        }
+
+        .chart-priorities {
+            top: 1950px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1200px;
+            height: 550px;
+        }
+
+        /* Кнопки управления */
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .control-btn.reset {
+            background: #e74c3c;
+        }
+
+        .control-btn.reset:hover {
+            background: #c0392b;
+        }
+
+        /* Resize handle стилизация */
+        .chart-container::-webkit-resizer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+
+        /* Адаптивность для мобильных */
+        @media (max-width: 768px) {
+            .charts-section {
+                min-height: auto;
+                padding: 15px;
+            }
+
+            .chart-container {
+                position: relative !important;
+                margin: 20px auto;
+                display: block;
+                max-width: 100%;
+                resize: none;
+            }
+
+            .chart-snt-support,
+            .chart-financial-ready,
+            .chart-concerns,
+            .chart-fees,
+            .chart-participation,
+            .chart-priorities {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                right: auto !important;
+                transform: none !important;
+                width: 100% !important;
+                height: auto !important;
+            }
+
+            .controls {
+                position: relative;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+        }
+
+        .no-data {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2em;
+            padding: 50px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .navigation {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 40px;
+            font-size: 0.9em;
+        }
+
+        /* Адаптивные стили для графиков в зависимости от устройства */
+        .device-mobile .bokeh-container .bk-root {
+            width: 100% !important;
+            max-width: 350px !important;
+        }
+        
+        .device-tablet .bokeh-container .bk-root {
+            width: 100% !important;
+            max-width: 800px !important;
+        }
+
+        .dashboard-section {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .dashboard-card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.13), 0 1.5px 8px rgba(0,0,0,0.07);
+            padding: 36px 32px 32px 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+            transition: box-shadow 0.3s;
+        }
+        .dashboard-card h3 {
+            font-size: 1.35em;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 28px;
+            letter-spacing: 0.1px;
+            text-align: center;
+        }
+        .dashboard-row {
+            display: flex;
+            flex-direction: row;
+            gap: 32px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        .dashboard-graph {
+            flex: 1 1 400px;
+            min-width: 320px;
+            max-width: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        @media (max-width: 1100px) {
+            .dashboard-row {
+                flex-direction: column;
+                gap: 24px;
+            }
+            .dashboard-graph {
+                max-width: 100%;
+            }
+        }
+        @media (max-width: 700px) {
+            .dashboard-card {
+                padding: 18px 6px 18px 6px;
+                border-radius: 14px;
+            }
+            .dashboard-section {
+                gap: 20px;
+            }
+            .dashboard-card h3 {
+                font-size: 1.1em;
+                margin-bottom: 16px;
+            }
+        }
+
+        /* Стили для карусели комментариев */
+        .comments-carousel-container {
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 180px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.5s ease;
+            height: 100%;
+        }
+
+        .comment-slide {
+            min-width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        .comment-content {
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .comment-content p {
+            font-size: 1.2em;
+            line-height: 1.6;
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-style: italic;
+            position: relative;
+        }
+
+        .comment-content p::before {
+            content: '"';
+            font-size: 3em;
+            color: #667eea;
+            position: absolute;
+            left: -30px;
+            top: -10px;
+            opacity: 0.3;
+        }
+
+        .comment-date {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .carousel-btn:hover {
+            background: rgba(102, 126, 234, 1);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .carousel-btn.prev {
+            left: 15px;
+        }
+
+        .carousel-btn.next {
+            right: 15px;
+        }
+
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #bdc3c7;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .indicator.active {
+            background: #667eea;
+            transform: scale(1.3);
+        }
+
+        .carousel-info {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .carousel-info p {
+            margin: 10px 0;
+            color: #5a6c7d;
+        }
+
+        .btn-small {
+            font-size: 0.9em;
+            padding: 8px 20px;
+            margin-top: 10px;
+        }
+
+        .no-comments {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        /* Адаптивность для карусели */
+        @media (max-width: 768px) {
+            .comment-content {
+                max-width: 90%;
+            }
+
+            .comment-content p {
+                font-size: 1em;
+            }
+
+            .carousel-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .carousel-btn.prev {
+                left: 10px;
+            }
+
+            .carousel-btn.next {
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="device-{{ device_type }}">
+    <div class="container">
+        <header>
+            <h1>📊 Статистика опроса</h1>
+            <p>ДНП "Клеймёново-2" - Анализ мнений жителей</p>
+        </header>
+
+        <div class="stats-summary">
+            <h2>🎯 Общая информация</h2>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>{{ statistics.total_responses }}</h3>
+                    <p>Завершенных анкет</p>
+                </div>
+                <div class="summary-card">
+                    <h3>{{ statistics.questions_stats|length }}</h3>
+                    <p>Проанализированных вопросов</p>
+                </div>
+            </div>
+        </div>
+
+        {% if statistics.total_responses > 0 %}
+        <div class="dashboard-section">
+            <!-- 1. Пироги -->
+            <div class="dashboard-card">
+                <h3>Поддержка и готовность</h3>
+                <div class="dashboard-row">
+                    <div class="dashboard-graph">{{ charts.snt_support.div|safe }}</div>
+                    <div class="dashboard-graph">{{ charts.financial_ready.div|safe }}</div>
+                </div>
+            </div>
+            <!-- 2. Основные опасения -->
+            <div class="dashboard-card">
+                <h3>Основные опасения жителей</h3>
+                <div class="dashboard-row">
+                    <div class="dashboard-graph" style="max-width:1200px; width:100%;">{{ charts.concerns.div|safe }}</div>
+                </div>
+            </div>
+            <!-- 3. Взносы и участие -->
+            <div class="dashboard-card">
+                <h3>Взносы и участие</h3>
+                <div class="dashboard-row">
+                    <div class="dashboard-graph">{{ charts.fees.div|safe }}</div>
+                    <div class="dashboard-graph">{{ charts.participation.div|safe }}</div>
+                </div>
+            </div>
+            <!-- 4. Приоритеты -->
+            <div class="dashboard-card">
+                <h3>Важность различных аспектов СНТ</h3>
+                <div class="dashboard-row">
+                    <div class="dashboard-graph" style="max-width:1200px; width:100%;">{{ charts.priorities.div|safe }}</div>
+                </div>
+            </div>
+            
+            <!-- 5. Карусель предложений и комментариев -->
+            {% if comments_data.has_comments %}
+            <div class="dashboard-card">
+                <h3>💬 Предложения жителей</h3>
+                <div class="comments-carousel-container">
+                    <div class="carousel-wrapper">
+                        <div class="carousel-track" id="carouselTrack">
+                            {% for comment in comments_data.recent_comments %}
+                            <div class="comment-slide">
+                                <div class="comment-content">
+                                    <p>"{{ comment.text }}"</p>
+                                    <div class="comment-date">{{ comment.created_at }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button class="carousel-btn prev" onclick="moveCarousel(-1)">
+                            <span>‹</span>
+                        </button>
+                        <button class="carousel-btn next" onclick="moveCarousel(1)">
+                            <span>›</span>
+                        </button>
+                    </div>
+                    <div class="carousel-indicators">
+                        {% for i in range(comments_data.recent_comments|length) %}
+                        <div class="indicator" data-slide="{{ i }}"></div>
+                        {% endfor %}
+                    </div>
+                    <div class="carousel-info">
+                        <p>Всего комментариев: <strong>{{ comments_data.total_comments }}</strong></p>
+                        <a href="/comments" class="btn btn-small">Все комментарии →</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="dashboard-card">
+                <h3>💬 Предложения жителей</h3>
+                <div class="no-comments">
+                    <p>Пока нет предложений и комментариев от жителей</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="no-data">
+            <h2>📭 Пока нет данных</h2>
+            <p>Анкеты еще не заполнялись или не завершены.<br>
+            Вернитесь позже, когда появятся ответы жителей.</p>
+        </div>
+        {% endif %}
+
+        <div class="navigation">
+            <a href="/" class="btn">← Вернуться к опросу</a>
+            <a href="/details" class="btn">Заполнить анкету</a>
+        </div>
+
+        <div class="footer">
+            <p>Инициативная группа жителей ДНП "Клеймёново-2" | 2025</p>
+            <p>Данные обновляются в режиме реального времени</p>
+        </div>
+    </div>
+
+    <!-- Подключаем JavaScript Bokeh -->
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-3.0.3.min.js"></script>
+    
+    <!-- Скрипт для инициализации графиков Bokeh -->
+    {{ bokeh_script|safe }}
+
+    <!-- JavaScript для перетаскивания графиков -->
+    <script>
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let currentDragElement = null;
+
+        // Сохраненные позиции и размеры графиков
+        const defaultPositions = {
+            'chart-snt-support': { top: '80px', left: '50px', right: 'auto', width: '600px', height: '600px' },
+            'chart-financial-ready': { top: '80px', left: 'auto', right: '50px', width: '600px', height: '600px' },
+            'chart-concerns': { top: '750px', left: '50%', right: 'auto', transform: 'translateX(-50%)', width: '1200px', height: '450px' },
+            'chart-fees': { top: '1280px', left: '50px', right: 'auto', width: '800px', height: '650px' },
+            'chart-participation': { top: '1280px', left: 'auto', right: '50px', width: '900px', height: '550px' },
+            'chart-priorities': { top: '1950px', left: '50%', right: 'auto', transform: 'translateX(-50%)', width: '1200px', height: '550px' }
+        };
+
+        // Инициализация перетаскивания для всех графиков
+        document.addEventListener('DOMContentLoaded', function() {
+            const charts = document.querySelectorAll('.chart-container');
+            
+            charts.forEach(chart => {
+                // Загружаем сохраненные позиции и размеры
+                loadPositionAndSize(chart);
+                
+                // Обработчики событий мыши для перетаскивания
+                chart.addEventListener('mousedown', function(e) {
+                    // Проверяем, что клик не по resize handle
+                    if (!isResizeHandle(e)) {
+                        startDrag(e);
+                    }
+                });
+                chart.addEventListener('dragstart', function(e) { e.preventDefault(); });
+                
+                // Сохраняем размер при изменении
+                const resizeObserver = new ResizeObserver(function() {
+                    savePositionAndSize(chart);
+                });
+                resizeObserver.observe(chart);
+            });
+
+            // Глобальные обработчики
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            // Кнопка сброса позиций
+            document.querySelector('.control-btn.reset').addEventListener('click', resetPositions);
+        });
+
+        function isResizeHandle(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const handleSize = 20; // Размер области resize handle
+            
+            return (
+                e.clientX >= rect.right - handleSize &&
+                e.clientY >= rect.bottom - handleSize
+            );
+        }
+
+        function startDrag(e) {
+            if (window.innerWidth <= 768) return; // Отключаем на мобильных
+            
+            isDragging = true;
+            currentDragElement = e.currentTarget;
+            currentDragElement.classList.add('dragging');
+            
+            const rect = currentDragElement.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            e.preventDefault();
+        }
+
+        function drag(e) {
+            if (!isDragging || !currentDragElement) return;
+            
+            const containerRect = document.querySelector('.charts-section').getBoundingClientRect();
+            
+            let newX = e.clientX - containerRect.left - dragOffset.x;
+            let newY = e.clientY - containerRect.top - dragOffset.y;
+            
+            // Ограничиваем перемещение границами контейнера
+            newX = Math.max(0, Math.min(newX, containerRect.width - currentDragElement.offsetWidth));
+            newY = Math.max(0, Math.min(newY, containerRect.height - currentDragElement.offsetHeight));
+            
+            currentDragElement.style.left = newX + 'px';
+            currentDragElement.style.top = newY + 'px';
+            currentDragElement.style.right = 'auto';
+            currentDragElement.style.transform = 'none';
+        }
+
+        function stopDrag() {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            if (currentDragElement) {
+                currentDragElement.classList.remove('dragging');
+                savePositionAndSize(currentDragElement);
+                currentDragElement = null;
+            }
+        }
+
+        function savePositionAndSize(element) {
+            const id = element.id;
+            const data = {
+                top: element.style.top,
+                left: element.style.left,
+                right: element.style.right,
+                transform: element.style.transform,
+                width: element.style.width || element.offsetWidth + 'px',
+                height: element.style.height || element.offsetHeight + 'px'
+            };
+            localStorage.setItem('chart-data-' + id, JSON.stringify(data));
+        }
+
+        function loadPositionAndSize(element) {
+            const id = element.id;
+            const saved = localStorage.getItem('chart-data-' + id);
+            
+            if (saved) {
+                const data = JSON.parse(saved);
+                element.style.top = data.top;
+                element.style.left = data.left;
+                element.style.right = data.right;
+                element.style.transform = data.transform;
+                element.style.width = data.width;
+                element.style.height = data.height;
+            } else {
+                // Применяем дефолтные размеры
+                const defaultData = defaultPositions[id];
+                if (defaultData && defaultData.width) {
+                    element.style.width = defaultData.width;
+                    element.style.height = defaultData.height;
+                }
+            }
+        }
+
+        function resetPositions() {
+            const charts = document.querySelectorAll('.chart-container');
+            
+            charts.forEach(chart => {
+                const id = chart.id;
+                const defaultData = defaultPositions[id];
+                
+                if (defaultData) {
+                    chart.style.top = defaultData.top;
+                    chart.style.left = defaultData.left;
+                    chart.style.right = defaultData.right;
+                    chart.style.transform = defaultData.transform || 'none';
+                    chart.style.width = defaultData.width;
+                    chart.style.height = defaultData.height;
+                    
+                    // Удаляем сохраненные данные
+                    localStorage.removeItem('chart-data-' + id);
+                }
+            });
+            
+            // Небольшая анимация для показа сброса
+            charts.forEach(chart => {
+                chart.style.transition = 'all 0.5s ease';
+                setTimeout(() => {
+                    chart.style.transition = 'box-shadow 0.3s ease, transform 0.3s ease';
+                }, 500);
+            });
+        }
+    </script>
+
+    <!-- JavaScript для карусели комментариев -->
+    <script>
+        // JavaScript для карусели комментариев
+        let currentSlide = 0;
+        const totalSlides = document.querySelectorAll('.comment-slide').length;
+        let autoSlideInterval;
+
+        function updateCarousel() {
+            const track = document.getElementById('carouselTrack');
+            const indicators = document.querySelectorAll('.indicator');
+            
+            if (track) {
+                track.style.transform = `translateX(-${currentSlide * 100}%)`;
+            }
+            
+            // Обновляем индикаторы
+            indicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function moveCarousel(direction) {
+            currentSlide += direction;
+            
+            if (currentSlide >= totalSlides) {
+                currentSlide = 0;
+            } else if (currentSlide < 0) {
+                currentSlide = totalSlides - 1;
+            }
+            
+            updateCarousel();
+            restartAutoSlide();
+        }
+
+        function goToSlide(slideIndex) {
+            currentSlide = slideIndex;
+            updateCarousel();
+            restartAutoSlide();
+        }
+
+        function startAutoSlide() {
+            if (totalSlides > 1) {
+                autoSlideInterval = setInterval(() => {
+                    moveCarousel(1);
+                }, 5000); // Переключение каждые 5 секунд
+            }
+        }
+
+        function restartAutoSlide() {
+            clearInterval(autoSlideInterval);
+            startAutoSlide();
+        }
+
+        // Инициализация карусели при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCarousel();
+            startAutoSlide();
+            
+            // Добавляем обработчики кликов для индикаторов
+            const indicators = document.querySelectorAll('.indicator');
+            indicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', () => {
+                    goToSlide(index);
+                });
+            });
+            
+            // Остановка автопрокрутки при наведении мыши
+            const carouselWrapper = document.querySelector('.carousel-wrapper');
+            if (carouselWrapper) {
+                carouselWrapper.addEventListener('mouseenter', () => {
+                    clearInterval(autoSlideInterval);
+                });
+                
+                carouselWrapper.addEventListener('mouseleave', () => {
+                    startAutoSlide();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

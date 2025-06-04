@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Спасибо за участие!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 60px auto 0 auto;
+            padding: 32px 24px;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(44,62,80,0.10);
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.6em;
+            color: #27ae60;
+            margin-bottom: 18px;
+        }
+        .thanks-text {
+            font-size: 1.25em;
+            color: #2c3e50;
+            margin-bottom: 32px;
+        }
+        .stats-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: #fff;
+            padding: 14px 36px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-decoration: none;
+            transition: box-shadow 0.2s, transform 0.2s;
+            box-shadow: 0 4px 16px rgba(39,174,96,0.10);
+        }
+        .stats-btn:hover {
+            box-shadow: 0 8px 24px rgba(39,174,96,0.18);
+            transform: translateY(-2px);
+        }
+        .footer {
+            margin-top: 40px;
+            color: #888;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Спасибо!</h1>
+        <div class="thanks-text">
+            Ваши ответы успешно сохранены.<br>
+            Спасибо, что заполнили опросник и поделились своим мнением!<br><br>
+            Вы всегда можете вернуться и посмотреть <b>статистику</b> по опросу — просто нажмите на кнопку ниже.
+        </div>
+        <a href="/stats" class="stats-btn">Статистика</a>
+        <div class="footer">
+            Инициативная группа жителей ДНП "Клеймёново-2"<br>
+            Ваши данные обрабатываются конфиденциально
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Согласие на обработку персональных данных</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f7f7f7; margin: 0; }
+        .container { max-width: 700px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 2px 16px #0001; }
+        h1 { text-align: center; margin-bottom: 24px; }
+        .btn { background: #27ae60; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-size: 18px; cursor: pointer; margin-top: 24px; transition: background 0.2s; }
+        .btn:disabled { background: #b2dfb2; cursor: not-allowed; }
+        #success-message { display: none; text-align: center; color: #27ae60; font-size: 1.2em; margin-top: 32px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="{{ url_for('static', path='consent.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>СОГЛАСИЕ на обработку персональных данных</h1>
+        <div id="consent-text">
+            <!-- Сюда подставится текст с данными -->
+        </div>
+        <form id="consent-form">
+            <label>
+                <input type="checkbox" id="consent-checkbox">
+                Я подтверждаю согласие на обработку персональных данных
+            </label>
+            <button type="submit" class="btn" id="consent-btn" disabled>Подтвердить согласие</button>
+        </form>
+        <div id="success-message">Согласие зафиксировано, сохранён скриншот!</div>
+    </div>
+    <script>
+        // Твои данные (оператор)
+        const operatorName = "Ларину Максиму Ивановичу";
+        const operatorEmail = "admin@tylarmacclane.site";
+
+        // Данные пользователя из localStorage
+        const user = JSON.parse(localStorage.getItem('surveyBase') || '{}');
+        const fio = user.fio || '[ФИО не указано]';
+        const kadastr = user.kadastr || '[Кадастр не указан]';
+        const phone = user.phone || '[Телефон не указан]';
+        const email = user.email || '[Email не указан]';
+
+        // Текст согласия с подстановкой данных
+        const consentText = `
+<p>Я, <b>${fio}</b>, свободно, своей волей и в своем интересе даю согласие <b>${operatorName}</b> на обработку моих персональных данных, указанных в настоящей форме опроса:</p>
+<ul>
+    <li>Фамилия, Имя, Отчество: <b>${fio}</b></li>
+    <li>Кадастровый номер участка: <b>${kadastr}</b></li>
+    <li>Контактный телефон: <b>${phone}</b></li>
+    <li>Email: <b>${email}</b></li>
+    <li>Моя позиция (мнение), выраженная в ответах на вопросы.</li>
+</ul>
+<p><b>Цели обработки:</b></p>
+<ol>
+    <li>Проведение опроса среди собственников участков ДНП "Клеймёново-2" для выяснения их мнения относительно инициативы по ликвидации ДНП "Клеймёново-2" и создания нового юридического лица (ТСН/СНТ).</li>
+    <li>Формирование списка собственников, поддерживающих инициативу.</li>
+    <li>Информирование меня о дальнейших шагах (при наличии моих контактных данных).</li>
+    <li>Подготовка к проведению учредительного собрания нового ТСН/СНТ.</li>
+    <li>Использование данных в обезличенном виде для статистики.</li>
+</ol>
+<p><b>Действия с персональными данными:</b> Сбор, запись, систематизация, накопление, хранение, уточнение, извлечение, использование, обезличивание, удаление, уничтожение.</p>
+<p><b>Срок действия согласия:</b> до достижения целей обработки, но не более 2 лет, либо до отзыва.</p>
+<p><b>Порядок отзыва:</b> Письменно по адресу: <a href="mailto:${operatorEmail}">${operatorEmail}</a> или лично.</p>
+<p><b>Конфиденциальность:</b> ${operatorName} обязуется не передавать данные третьим лицам, кроме случаев, предусмотренных законом или необходимых для регистрации ТСН/СНТ.</p>
+<p>Подтверждаю, что ознакомлен(а) с настоящим Согласием и даю свое согласие на обработку моих персональных данных на указанных условиях.</p>
+        `;
+
+        document.getElementById('consent-text').innerHTML = consentText;
+
+        const consentCheckbox = document.getElementById('consent-checkbox');
+        const btn = document.getElementById('consent-btn');
+        const form = document.getElementById('consent-form');
+        const successMsg = document.getElementById('success-message');
+
+        if (user.consent) {
+            consentCheckbox.checked = true;
+            btn.disabled = false;
+        } else {
+            consentCheckbox.checked = false;
+            btn.disabled = true;
+        }
+        // Автоматическое подтверждение согласия, если autoConsent == '1'
+        if (localStorage.getItem('autoConsent') === '1') {
+            consentCheckbox.checked = true;
+            btn.disabled = false;
+            setTimeout(() => {
+                form.requestSubmit();
+            }, 200);
+        }
+
+        // Включаем/выключаем кнопку и меняем надпись
+        consentCheckbox.addEventListener('change', function() {
+            if (consentCheckbox.checked) {
+                btn.disabled = false;
+                btn.textContent = 'Подтвердить согласие';
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'Подтвердить согласие';
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!consentCheckbox.checked) return;
+            // Сначала обновляем DOM
+            btn.textContent = 'Подтверждено';
+            btn.disabled = true;
+            successMsg.style.display = 'block';
+            // Делаем скриншот чуть позже, чтобы DOM успел обновиться
+            setTimeout(() => {
+                html2canvas(document.querySelector('.container')).then(canvas => {
+                    const screenshot = canvas.toDataURL('image/png');
+                    const data = { fio, kadastr, phone, email, consent: true };
+                    sendConsentScreenshot(data, screenshot, function(res) {
+                        if (!res.ok) {
+                            alert('Ошибка при сохранении согласия!');
+                        }
+                    });
+                });
+            }, 200);
+        });
+    </script>
+</body>
+</html>
