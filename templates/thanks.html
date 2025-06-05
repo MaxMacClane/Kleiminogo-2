@@ -51,6 +51,32 @@
             color: #888;
             font-size: 0.95em;
         }
+        .countdown {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+            font-size: 1em;
+        }
+        .countdown-timer {
+            font-weight: bold;
+            color: #e67e22;
+        }
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .cancel-btn:hover {
+            background: #545b62;
+        }
     </style>
 </head>
 <body>
@@ -61,11 +87,45 @@
             Спасибо, что заполнили опросник и поделились своим мнением!<br><br>
             Вы всегда можете вернуться и посмотреть <b>статистику</b> по опросу — просто нажмите на кнопку ниже.
         </div>
+        
+        <div class="countdown" id="countdown">
+            Автоматический переход на статистику через <span class="countdown-timer" id="timer">20</span> секунд
+            <button class="cancel-btn" onclick="cancelRedirect()">Отменить</button>
+        </div>
+        
         <a href="/stats" class="stats-btn">Статистика</a>
         <div class="footer">
             Инициативная группа жителей ДНП "Клеймёново-2"<br>
             Ваши данные обрабатываются конфиденциально
         </div>
     </div>
+    
+    <script>
+        let countdownSeconds = 20;
+        let countdownTimer;
+        
+        function startCountdown() {
+            const timerElement = document.getElementById('timer');
+            const countdownElement = document.getElementById('countdown');
+            
+            countdownTimer = setInterval(() => {
+                countdownSeconds--;
+                timerElement.textContent = countdownSeconds;
+                
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownTimer);
+                    window.location.href = '/stats';
+                }
+            }, 1000);
+        }
+        
+        function cancelRedirect() {
+            clearInterval(countdownTimer);
+            document.getElementById('countdown').style.display = 'none';
+        }
+        
+        // Запускаем обратный отсчёт при загрузке страницы
+        window.addEventListener('DOMContentLoaded', startCountdown);
+    </script>
 </body>
 </html>

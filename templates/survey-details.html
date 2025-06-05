@@ -349,6 +349,108 @@
         .radio-group, .checkbox-group {
             margin: 0;
         }
+        /* --- TOOLTIP MINIMALISM --- */
+        .custom-tooltip {
+            position: absolute;
+            left: 10px;
+            z-index: 10;
+            background: #fff;
+            color: #222;
+            border: 1.5px solid #888;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(44,62,80,0.18);
+            padding: 14px 22px 14px 54px;
+            font-size: 1em;
+            font-family: inherit;
+            min-width: 220px;
+            max-width: 95%;
+            font-weight: 500;
+        }
+        .custom-tooltip .icon {
+            position: absolute;
+            left: 16px;
+            top: 14px;
+            width: 28px;
+            height: 28px;
+            background: #ffe08a;
+            color: #e67e22;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            border: 1.5px solid #ffe08a;
+        }
+        .custom-tooltip .arrow {
+            position: absolute;
+            left: 38px;
+            bottom: -14px;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 14px solid #fff;
+            filter: drop-shadow(0 1px 0 #888);
+        }
+        /* Tooltip справа для приоритетов */
+        .custom-tooltip.tooltip-right {
+            left: auto;
+            right: 0;
+            top: -55px;
+        }
+        .custom-tooltip.tooltip-right .arrow {
+            left: auto;
+            right: 38px;
+        }
+        /* Tooltip для communication */
+        #communication-tooltip {
+            top: 50px !important;
+            left: 10px !important;
+            right: auto !important;
+            min-width: 180px;
+        }
+        #communication-tooltip .arrow {
+            left: 38px !important;
+            right: auto !important;
+            top: -14px !important;
+            bottom: auto !important;
+            border-top: none !important;
+            border-bottom: 14px solid #fff !important;
+            border-left: 12px solid transparent !important;
+            border-right: 12px solid transparent !important;
+        }
+        /* Tooltip для чекбоксов и radio - сверху */
+        #concerns-tooltip, #max-fee-tooltip, #participation-tooltip {
+            top: -55px;
+        }
+        @media (max-width: 700px) {
+            .custom-tooltip, .custom-tooltip.tooltip-right, #communication-tooltip {
+                min-width: 120px;
+                font-size: 0.95em;
+                padding: 10px 12px 10px 38px;
+            }
+            .custom-tooltip.tooltip-right {
+                left: 10px;
+                right: auto;
+                top: 55px;
+            }
+            .custom-tooltip.tooltip-right .arrow {
+                left: 38px;
+                right: auto;
+                top: -14px;
+                bottom: auto;
+                border-top: none;
+                border-bottom: 14px solid #fff;
+                border-left: 12px solid transparent;
+                border-right: 12px solid transparent;
+            }
+            #communication-tooltip {
+                top: 40px !important;
+                min-width: 100px;
+            }
+        }
+        /* --- END TOOLTIP MINIMALISM --- */
     </style>
 </head>
 <body>
@@ -383,76 +485,91 @@
         <form id="details-form">
             <div class="card card-red-bg" style="border-left: 5px solid #e74c3c;">
                 <h2>🔍 Основные опасения</h2>
-                <p>Какие у вас основные опасения или вопросы?</p>
-                <div class="answers-box">
+                <p><strong style="font-weight: 700; font-size: 1.1em;">Какие у вас основные опасения или вопросы?</strong></p>
+                <div class="answers-box" style="position:relative;">
                     <div class="checkbox-group">
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="size_fees" id="concern1">
-                            <label for="concern1">Размер взносов и дополнительные расходы</label>
+                            <label for="concern1"><strong>Размер взносов и дополнительные расходы</strong></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="transparency" id="concern2">
-                            <label for="concern2">Прозрачность использования средств</label>
+                            <label for="concern2"><strong>Прозрачность использования средств</strong></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="management" id="concern3">
-                            <label for="concern3">Качество управления новым СНТ</label>
+                            <label for="concern3"><strong>Качество управления новым СНТ</strong></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="legal_risks" id="concern4">
-                            <label for="concern4">Правовые риски и ответственность</label>
+                            <label for="concern4"><strong>Правовые риски и ответственность</strong></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="infrastructure" id="concern5">
-                            <label for="concern5">Обязательства по инфраструктуре (мусор, дороги)</label>
+                            <label for="concern5"><strong>Обязательства по инфраструктуре (мусор, дороги)</strong></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="bureaucracy" id="concern6">
-                            <label for="concern6">Бюрократические сложности</label>
+                            <label for="concern6"><strong>Бюрократические сложности</strong></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="concerns" value="other" id="concern7">
-                            <label for="concern7">Другое</label>
+                            <label for="concern7"><strong>Другое</strong></label>
                         </div>
+                    </div>
+                    <div id="concerns-tooltip" class="custom-tooltip" style="display:none;">
+                        <span class="icon">&#33;</span>
+                        Пожалуйста, выберите хотя бы один вариант!
+                        <span class="arrow"></span>
                     </div>
                 </div>
             </div>
 
             <div class="card card-yellow-bg" style="border-left: 5px solid #f39c12;">
                 <h2>💰 Ежемесячные взносы</h2>
-                <p>Какой максимальный ежемесячный взнос вы считаете приемлемым? <span style="color: #e74c3c;">*</span></p>
-                <div class="answers-box">
+                <p><strong style="font-weight: 700; font-size: 1.1em;">Какой максимальный ежемесячный взнос вы считаете приемлемым?</strong> <span style="color: #e74c3c;">*</span></p>
+                <div class="answers-box" id="max-fee-box" style="position:relative;">
                     <div class="radio-group">
-                        <label class="radio-option"><input type="radio" name="max_fee" value="500" required> 500 р. в месяц</label>
-                        <label class="radio-option"><input type="radio" name="max_fee" value="1000"> 1000 р. в месяц</label>
-                        <label class="radio-option"><input type="radio" name="max_fee" value="1500"> 1500 р. в месяц</label>
-                        <label class="radio-option"><input type="radio" name="max_fee" value="2000"> 2000 р. в месяц</label>
-                        <label class="radio-option"><input type="radio" name="max_fee" value="refuse"> Отказываюсь платить взносы</label>
+                        <label class="radio-option"><input type="radio" name="max_fee" value="500"> <strong>500 р. в месяц</strong></label>
+                        <label class="radio-option"><input type="radio" name="max_fee" value="1000"> <strong>1000 р. в месяц</strong></label>
+                        <label class="radio-option"><input type="radio" name="max_fee" value="1500"> <strong>1500 р. в месяц</strong></label>
+                        <label class="radio-option"><input type="radio" name="max_fee" value="2000"> <strong>2000 р. в месяц</strong></label>
+                        <label class="radio-option"><input type="radio" name="max_fee" value="refuse"> <strong>Отказываюсь платить взносы</strong></label>
+                    </div>
+                    <div id="max-fee-tooltip" class="custom-tooltip" style="display:none;">
+                        <span class="icon">&#33;</span>
+                        Пожалуйста, выберите вариант!
+                        <span class="arrow"></span>
                     </div>
                 </div>
             </div>
 
             <div class="card card-purple-bg" style="border-left: 5px solid #9b59b6;">
                 <h2>📧 Участие в управлении</h2>
-                <p>Готовы ли вы лично участвовать в управлении СНТ?</p>
-                <div class="answers-box">
+                <p><strong style="font-weight: 700; font-size: 1.1em;">Готовы ли вы лично участвовать в управлении СНТ?</strong></p>
+                <div class="answers-box" id="participation-box" style="position:relative;">
                     <div class="radio-group">
-                        <label class="radio-option"><input type="radio" name="participation" value="board"> Готов(а) войти в правление</label>
-                        <label class="radio-option"><input type="radio" name="participation" value="committees"> Готов(а) участвовать в комитетах</label>
-                        <label class="radio-option"><input type="radio" name="participation" value="meetings"> Буду участвовать только в собраниях</label>
-                        <label class="radio-option"><input type="radio" name="participation" value="observer"> Предпочитаю быть наблюдателем</label>
-                        <label class="radio-option"><input type="radio" name="participation" value="no"> Нет времени участвовать</label>
+                        <label class="radio-option"><input type="radio" name="participation" value="board"> <strong>Готов(а) войти в правление</strong></label>
+                        <label class="radio-option"><input type="radio" name="participation" value="committees"> <strong>Готов(а) участвовать в комитетах</strong></label>
+                        <label class="radio-option"><input type="radio" name="participation" value="meetings"> <strong>Буду участвовать только в собраниях</strong></label>
+                        <label class="radio-option"><input type="radio" name="participation" value="observer"> <strong>Предпочитаю быть наблюдателем</strong></label>
+                        <label class="radio-option"><input type="radio" name="participation" value="no"> <strong>Нет времени участвовать</strong></label>
+                    </div>
+                    <div id="participation-tooltip" class="custom-tooltip" style="display:none;">
+                        <span class="icon">&#33;</span>
+                        Пожалуйста, выберите вариант!
+                        <span class="arrow"></span>
                     </div>
                 </div>
             </div>
 
             <div class="card card-blue-bg" style="border-left: 5px solid #3498db;">
                 <h2>📊 Расставьте приоритеты по важности</h2>
-                <p>Оцените каждый аспект от 1 (неважно) до 7 (очень важно):</p>
+                <p><strong style="font-weight: 700; font-size: 1.1em;">Оцените каждый аспект от 1 (неважно) до 7 (очень важно):</strong></p>
                 <div class="answers-box">
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-roads-box" style="position:relative;">
                         <label>Содержание дорог в хорошем состоянии</label>
-                        <select name="priority_roads" required>
+                        <select name="priority_roads">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -462,10 +579,15 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-roads-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-garbage-box" style="position:relative;">
                         <label>Организация вывоза мусора</label>
-                        <select name="priority_garbage" required>
+                        <select name="priority_garbage">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -475,10 +597,15 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-garbage-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-landscaping-box" style="position:relative;">
                         <label>Благоустройство территории</label>
-                        <select name="priority_landscaping" required>
+                        <select name="priority_landscaping">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -488,10 +615,15 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-landscaping-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-security-box" style="position:relative;">
                         <label>Безопасность и охрана</label>
-                        <select name="priority_security" required>
+                        <select name="priority_security">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -501,10 +633,15 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-security-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-electricity-box" style="position:relative;">
                         <label>Обслуживание электросетей</label>
-                        <select name="priority_electricity" required>
+                        <select name="priority_electricity">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -514,10 +651,15 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-electricity-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-transparency-box" style="position:relative;">
                         <label>Прозрачная отчётность</label>
-                        <select name="priority_transparency" required>
+                        <select name="priority_transparency">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -527,10 +669,15 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-transparency-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
-                    <div class="priority-group">
+                    <div class="priority-group" id="priority-low-fees-box" style="position:relative;">
                         <label>Минимальные взносы</label>
-                        <select name="priority_low_fees" required>
+                        <select name="priority_low_fees">
                             <option value="">Выберите</option>
                             <option value="1">1 - Совсем не важно</option>
                             <option value="2">2</option>
@@ -540,23 +687,35 @@
                             <option value="6">6</option>
                             <option value="7">7 - Очень важно</option>
                         </select>
+                        <div id="priority-low-fees-tooltip" class="custom-tooltip tooltip-right" style="display:none;">
+                            <span class="icon">&#33;</span>
+                            Пожалуйста, выберите значение!
+                            <span class="arrow"></span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="card card-green-bg" style="border-left: 5px solid #27ae60;">
                 <h2>📝 Дополнительные комментарии</h2>
-                <p>Расскажите подробнее о своей позиции, предложениях или вопросах:</p>
+                <p><strong style="font-weight: 700; font-size: 1.1em;">Расскажите подробнее о своей позиции, предложениях или вопросах:</strong></p>
                 <div class="form-group">
-                    <textarea name="comments" placeholder="Ваши комментарии, предложения или вопросы..."></textarea>
+                    <textarea name="comments" placeholder="Ваши комментарии, предложения или вопросы..." maxlength="2000"></textarea>
+                </div>
+                
+                <!-- Информационное уведомление -->
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-left: 5px solid #f39c12; border-radius: 8px; padding: 12px 15px; margin-top: 15px;">
+                    <div style="color: #856404; font-size: 0.9em; line-height: 1.4;">
+                        <strong>Важно:</strong> Комментарии с нецензурной лексикой сохраняются, но не публикуются. Минимум 10 символов, осмысленные предложения на русском языке. Пишите конструктивно и вежливо для участия в общем обсуждении.
+                    </div>
                 </div>
             </div>
 
             <div class="card card-yellow-bg" style="border-left: 5px solid #e67e22;">
                 <h2>📱 Способ коммуникации</h2>
-                <p>Как вы предпочитаете получать информацию об СНТ? <span style="color: #e74c3c;">*</span></p>
-                <div class="form-group">
-                    <select name="communication" required>
+                <p><strong style="font-weight: 700; font-size: 1.1em;">Как вы предпочитаете получать информацию об СНТ?</strong> <span style="color: #e74c3c;">*</span></p>
+                <div class="form-group" id="communication-box" style="position:relative;">
+                    <select name="communication">
                         <option value="">Выберите способ связи</option>
                         <option value="phone">По телефону</option>
                         <option value="sms">Сообщение</option>
@@ -565,10 +724,18 @@
                         <option value="email">Email</option>
                         <option value="all">Всё устраивает</option>
                     </select>
+                    <div id="communication-tooltip" class="custom-tooltip" style="display:none;">
+                        <span class="icon">&#33;</span>
+                        Пожалуйста, выберите способ связи!
+                        <span class="arrow"></span>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" class="btn">Завершить опрос</button>
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <a href="/" class="btn" style="text-decoration: none; text-align: center; display: block; flex: 1; max-width: 200px; line-height: 1.2;">Вернуться<br>на главную</a>
+                <button type="submit" class="btn" style="padding: 15px 30px; font-size: 1.8em; font-weight: 700; flex: 2;">Завершить опрос</button>
+            </div>
         </form>
         
         <div class="footer">
@@ -610,64 +777,278 @@
             
             document.getElementById('userSupport').textContent = supportText[data.snt_support] || '-';
             document.getElementById('userPayment').textContent = paymentText[data.payment_ready] || '-';
-        });
-
-        // Обработка формы детального опроса
-        document.getElementById('details-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const detailsData = {};
-            for (let [key, value] of formData.entries()) {
-                if (key === 'concerns') {
-                    if (!detailsData.concerns) detailsData.concerns = [];
-                    detailsData.concerns.push(value);
+            
+            // Объявляем priorityFields в области видимости DOMContentLoaded
+            const priorityFields = [
+                {name: 'priority_roads', box: 'priority-roads-box', tooltip: 'priority-roads-tooltip'},
+                {name: 'priority_garbage', box: 'priority-garbage-box', tooltip: 'priority-garbage-tooltip'},
+                {name: 'priority_landscaping', box: 'priority-landscaping-box', tooltip: 'priority-landscaping-tooltip'},
+                {name: 'priority_security', box: 'priority-security-box', tooltip: 'priority-security-tooltip'},
+                {name: 'priority_electricity', box: 'priority-electricity-box', tooltip: 'priority-electricity-tooltip'},
+                {name: 'priority_transparency', box: 'priority-transparency-box', tooltip: 'priority-transparency-tooltip'},
+                {name: 'priority_low_fees', box: 'priority-low-fees-box', tooltip: 'priority-low-fees-tooltip'}
+            ];
+            
+            // Обработка формы детального опроса
+            document.getElementById('details-form').addEventListener('submit', async function(e) {
+                console.log('🚀 НАЧАЛО SUBMIT ФУНКЦИИ');
+                
+                // 1. Проверка чекбоксов "concerns"
+                console.log('📝 Проверяем concerns...');
+                const checkedConcerns = document.querySelectorAll('input[name="concerns"]:checked');
+                const concernsTooltip = document.getElementById('concerns-tooltip');
+                console.log('   checkedConcerns.length:', checkedConcerns.length);
+                console.log('   concernsTooltip:', concernsTooltip);
+                if (checkedConcerns.length === 0) {
+                    console.log('❌ CONCERNS: Не выбрано ни одного варианта!');
+                    concernsTooltip.style.display = 'block';
+                    concernsTooltip.parentElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    e.preventDefault();
+                    return false;
                 } else {
-                    detailsData[key] = value;
+                    console.log('✅ CONCERNS: OK');
+                    concernsTooltip.style.display = 'none';
                 }
-            }
-            // Получаем session_id
-            const session_id = localStorage.getItem('session_id');
-            if (!session_id) {
-                alert('Ошибка: session_id не найден. Заполните базовую анкету заново.');
-                window.location.href = '/';
-                return;
-            }
-            // Собираем ответы для /survey/details
-            const answers = [];
-            // Пример: маппинг ключей на question_id
-            const questionMap = {
-                concerns: 7, // массив, можно сериализовать в строку
-                max_fee: 8,
-                participation: 9,
-                priority_roads: 10,
-                priority_garbage: 11,
-                priority_landscaping: 12,
-                priority_security: 13,
-                priority_electricity: 14,
-                priority_transparency: 15,
-                priority_low_fees: 16,
-                comments: 17,
-                communication: 18
-            };
-            for (const key in detailsData) {
-                if (questionMap[key]) {
-                    let value = detailsData[key];
-                    if (Array.isArray(value)) value = value.join(', ');
-                    answers.push({ question_id: questionMap[key], value });
+                
+                // 2. Проверка radio max_fee
+                console.log('💰 Проверяем max_fee...');
+                const checkedMaxFee = document.querySelector('input[name="max_fee"]:checked');
+                const maxFeeTooltip = document.getElementById('max-fee-tooltip');
+                console.log('   checkedMaxFee:', checkedMaxFee);
+                console.log('   maxFeeTooltip:', maxFeeTooltip);
+                if (!checkedMaxFee) {
+                    console.log('❌ MAX_FEE: Не выбрано!');
+                    maxFeeTooltip.style.display = 'block';
+                    maxFeeTooltip.parentElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    e.preventDefault();
+                    return false;
+                } else {
+                    console.log('✅ MAX_FEE: OK, value =', checkedMaxFee.value);
+                    maxFeeTooltip.style.display = 'none';
                 }
-            }
-            // Отправляем на /survey/details
-            await fetch('/survey/details', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id,
-                    answers
-                })
+                
+                // 3. Проверка radio participation
+                console.log('👥 Проверяем participation...');
+                const checkedParticipation = document.querySelector('input[name="participation"]:checked');
+                const participationTooltip = document.getElementById('participation-tooltip');
+                console.log('   checkedParticipation:', checkedParticipation);
+                console.log('   participationTooltip:', participationTooltip);
+                if (!checkedParticipation) {
+                    console.log('❌ PARTICIPATION: Не выбрано!');
+                    participationTooltip.style.display = 'block';
+                    participationTooltip.parentElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    e.preventDefault();
+                    return false;
+                } else {
+                    console.log('✅ PARTICIPATION: OK, value =', checkedParticipation.value);
+                    participationTooltip.style.display = 'none';
+                }
+                
+                // 4. Проверка всех priority_* (select)
+                console.log('⭐ Проверяем priority поля...');
+                console.log('   priorityFields array:', priorityFields);
+                for (const field of priorityFields) {
+                    console.log(`   Проверяем ${field.name}...`);
+                    const select = document.querySelector(`select[name="${field.name}"]`);
+                    const tooltip = document.getElementById(field.tooltip);
+                    console.log(`     select:`, select);
+                    console.log(`     tooltip:`, tooltip);
+                    console.log(`     select.value:`, select ? select.value : 'ЭЛЕМЕНТ НЕ НАЙДЕН');
+                    if (!select.value) {
+                        console.log(`❌ PRIORITY ${field.name}: Не выбрано!`);
+                        tooltip.style.display = 'block';
+                        tooltip.parentElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        e.preventDefault();
+                        return false;
+                    } else {
+                        console.log(`✅ PRIORITY ${field.name}: OK, value =`, select.value);
+                        tooltip.style.display = 'none';
+                    }
+                }
+                
+                // 5. Проверка communication (select)
+                console.log('📱 Проверяем communication...');
+                const communicationSelect = document.querySelector('select[name="communication"]');
+                const communicationTooltip = document.getElementById('communication-tooltip');
+                console.log('   communicationSelect:', communicationSelect);
+                console.log('   communicationTooltip:', communicationTooltip);
+                console.log('   communicationSelect.value:', communicationSelect ? communicationSelect.value : 'ЭЛЕМЕНТ НЕ НАЙДЕН');
+                console.log('   communicationSelect.value == "":', communicationSelect ? (communicationSelect.value === "") : 'НЕТ ЭЛЕМЕНТА');
+                console.log('   !communicationSelect.value:', communicationSelect ? (!communicationSelect.value) : 'НЕТ ЭЛЕМЕНТА');
+                
+                if (!communicationSelect.value) {
+                    console.log('❌ COMMUNICATION: Не выбрано!');
+                    console.log('   tooltip ДО изменения - display:', communicationTooltip.style.display);
+                    console.log('   tooltip ДО изменения - offsetHeight:', communicationTooltip.offsetHeight);
+                    console.log('   tooltip ДО изменения - getBoundingClientRect():', communicationTooltip.getBoundingClientRect());
+                    
+                    // Только показываем tooltip, позиционирование полностью через CSS
+                    communicationTooltip.style.display = 'block';
+                    
+                    console.log('   tooltip ПОСЛЕ изменения - display:', communicationTooltip.style.display);
+                    console.log('   tooltip ПОСЛЕ изменения - offsetHeight:', communicationTooltip.offsetHeight);
+                    console.log('   tooltip ПОСЛЕ изменения - getBoundingClientRect():', communicationTooltip.getBoundingClientRect());
+                    communicationTooltip.parentElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    console.log('   Скроллим к элементу:', communicationTooltip.parentElement);
+                    e.preventDefault();
+                    return false;
+                } else {
+                    console.log('✅ COMMUNICATION: OK, value =', communicationSelect.value);
+                    communicationTooltip.style.display = 'none';
+                }
+                
+                console.log('🎉 ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ! Отправляем форму...');
+                e.preventDefault();
+                const formData = new FormData(this);
+                const detailsData = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key === 'concerns') {
+                        if (!detailsData.concerns) detailsData.concerns = [];
+                        detailsData.concerns.push(value);
+                    } else {
+                        detailsData[key] = value;
+                    }
+                }
+                // Получаем session_id
+                const session_id = localStorage.getItem('session_id');
+                if (!session_id) {
+                    alert('Ошибка: session_id не найден. Заполните базовую анкету заново.');
+                    window.location.href = '/';
+                    return;
+                }
+                // Собираем ответы для /survey/details
+                const answers = [];
+                // Пример: маппинг ключей на question_id
+                const questionMap = {
+                    concerns: 6, // Какие у вас основные опасения или вопросы?
+                    max_fee: 7, // Какой максимальный ежемесячный взнос вы считаете приемлемым?
+                    participation: 8, // Готовы ли вы лично участвовать в управлении СНТ?
+                    priority_roads: 9, // Содержание дорог в хорошем состоянии (приоритет)
+                    priority_garbage: 10, // Организация вывоза мусора (приоритет)
+                    priority_landscaping: 11, // Благоустройство территории (приоритет)
+                    priority_security: 12, // Безопасность и охрана (приоритет)
+                    priority_electricity: 13, // Обслуживание электросетей (приоритет)
+                    priority_transparency: 14, // Прозрачная отчётность (приоритет)
+                    priority_low_fees: 15, // Минимальные взносы (приоритет)
+                    comments: 16, // Ваши предложения и комментарии
+                    communication: 17 // Предпочитаемый способ коммуникации
+                };
+                for (const key in detailsData) {
+                    if (questionMap[key]) {
+                        let value = detailsData[key];
+                        if (Array.isArray(value)) value = value.join(', ');
+                        answers.push({ question_id: questionMap[key], value });
+                    }
+                }
+                // Отправляем на /survey/details
+                try {
+                    const response = await fetch('/survey/details', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id,
+                            answers
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        alert('Ошибка: ' + (errorData.detail || 'Не удалось сохранить данные'));
+                        return;
+                    }
+                    
+                    // Сохраняем финальные данные
+                    localStorage.setItem('finalSurveyData', JSON.stringify({ session_id, ...detailsData }));
+                    window.location.href = '/thanks';
+                } catch (error) {
+                    console.error('Ошибка при отправке:', error);
+                    alert('Ошибка сети. Попробуйте еще раз.');
+                }
             });
-            // Сохраняем финальные данные
-            localStorage.setItem('finalSurveyData', JSON.stringify({ session_id, ...detailsData }));
-            window.location.href = '/thanks';
+
+            // Скрывать tooltip при изменении значения
+            // чекбоксы concerns
+            const allConcerns = document.querySelectorAll('input[name="concerns"]');
+            allConcerns.forEach(cb => cb.addEventListener('change', function() {
+                const checked = document.querySelectorAll('input[name="concerns"]:checked');
+                const tooltip = document.getElementById('concerns-tooltip');
+                if (checked.length > 0) {
+                    tooltip.style.display = 'none';
+                }
+            }));
+            // radio max_fee
+            const allMaxFee = document.querySelectorAll('input[name="max_fee"]');
+            allMaxFee.forEach(r => r.addEventListener('change', function() {
+                const checked = document.querySelector('input[name="max_fee"]:checked');
+                const tooltip = document.getElementById('max-fee-tooltip');
+                if (checked) {
+                    tooltip.style.display = 'none';
+                }
+            }));
+            // radio participation
+            const allParticipation = document.querySelectorAll('input[name="participation"]');
+            allParticipation.forEach(r => r.addEventListener('change', function() {
+                const checked = document.querySelector('input[name="participation"]:checked');
+                const tooltip = document.getElementById('participation-tooltip');
+                if (checked) {
+                    tooltip.style.display = 'none';
+                }
+            }));
+            // priority selects
+            for (const field of priorityFields) {
+                const select = document.querySelector(`select[name="${field.name}"]`);
+                const tooltip = document.getElementById(field.tooltip);
+                select.addEventListener('change', function() {
+                    if (select.value) {
+                        tooltip.style.display = 'none';
+                    }
+                });
+            }
+            // communication select
+            console.log('🔧 Настраиваем обработчики для communication...');
+            const communicationSelect = document.querySelector('select[name="communication"]');
+            const communicationTooltip = document.getElementById('communication-tooltip');
+            console.log('   communicationSelect:', communicationSelect);
+            console.log('   communicationTooltip:', communicationTooltip);
+            
+            if (communicationSelect && communicationTooltip) {
+                console.log('✅ Элементы найдены, добавляем обработчики...');
+                
+                communicationSelect.addEventListener('change', function() {
+                    console.log('📱 CHANGE event - communicationSelect.value:', communicationSelect.value);
+                    if (communicationSelect.value) {
+                        console.log('   Скрываем tooltip');
+                        communicationTooltip.style.display = 'none';
+                    } else {
+                        console.log('   Оставляем tooltip');
+                    }
+                });
+                
+                communicationSelect.addEventListener('blur', function() {
+                    console.log('📱 BLUR event - communicationSelect.value:', communicationSelect.value);
+                    if (!communicationSelect.value) {
+                        console.log('   Показываем tooltip');
+                        console.log('   tooltip ДО blur - display:', communicationTooltip.style.display);
+                        console.log('   tooltip ДО blur - offsetHeight:', communicationTooltip.offsetHeight);
+                        
+                        // Только показываем tooltip, позиционирование полностью через CSS
+                        communicationTooltip.style.display = 'block';
+                        
+                        console.log('   tooltip ПОСЛЕ blur - display:', communicationTooltip.style.display);
+                        console.log('   tooltip ПОСЛЕ blur - offsetHeight:', communicationTooltip.offsetHeight);
+                        console.log('   tooltip ПОСЛЕ blur - getBoundingClientRect():', communicationTooltip.getBoundingClientRect());
+                        communicationTooltip.parentElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    } else {
+                        console.log('   Не показываем tooltip, значение есть');
+                    }
+                });
+                
+                console.log('✅ Обработчики для communication добавлены');
+            } else {
+                console.log('❌ ОШИБКА: Не найдены элементы для communication!');
+                console.log('   communicationSelect:', communicationSelect);
+                console.log('   communicationTooltip:', communicationTooltip);
+            }
         });
     </script>
 </body>

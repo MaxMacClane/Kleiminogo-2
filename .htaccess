@@ -1,0 +1,11 @@
+RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ wsgi.py/$1 [QSA,L]
+
+# Для статических файлов
+RewriteCond %{REQUEST_URI} ^/static/
+RewriteRule ^(.*)$ - [L]
+
+# Python WSGI
+AddHandler wsgi-script .py
+Options +ExecCGI 

@@ -10,7 +10,7 @@ class QuestionSchema(BaseModel):
     order: int
 
     class Config:
-        orm_mode = True  # Позволяет использовать SQLAlchemy-объекты напрямую
+        from_attributes = True  # Позволяет использовать SQLAlchemy-объекты напрямую
 
 # Схема для одного ответа на вопрос (приём с фронта)
 class AnswerCreateSchema(BaseModel):
@@ -28,7 +28,7 @@ class AnswerSchema(BaseModel):
     value: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ResponseSchema(BaseModel):
     id: int
@@ -36,7 +36,7 @@ class ResponseSchema(BaseModel):
     answers: List[AnswerSchema]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- Поэтапные схемы ---
 class BaseStepSchema(BaseModel):

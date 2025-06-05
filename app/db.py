@@ -3,11 +3,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Путь к базе данных - используем переменную окружения или дефолтный путь
-DATABASE_PATH = os.getenv("DATABASE_PATH", "/app/data/survey.db")
+# Корректный путь к базе данных (data/db.sqlite3 в корне проекта)
+DATABASE_PATH = os.getenv("DATABASE_PATH", os.path.join("data", "db.sqlite3"))
 
-# Создаем директорию если её нет
-os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+# Создаём директорию, если её нет (только если путь не в корне)
+dirname = os.path.dirname(DATABASE_PATH)
+if dirname and not os.path.exists(dirname):
+    os.makedirs(dirname, exist_ok=True)
 
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 

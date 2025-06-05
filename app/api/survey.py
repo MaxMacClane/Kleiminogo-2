@@ -3,11 +3,14 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app import crud, schemas
 from app.email_service import send_verification_code
+from app.models import CommentLike, Answer
+from app.comment_filter import validate_comment, get_comment_toxicity
 import os
 import base64
 from datetime import datetime
 from pydantic import BaseModel
 from uuid import uuid4
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(
     prefix="/survey",
@@ -158,9 +161,70 @@ def save_base(data: schemas.BaseStepSchema, db: Session = Depends(get_db)):
 
 @router.post("/details")
 def save_details(data: schemas.DetailsStepSchema, db: Session = Depends(get_db)):
+    """Сохранить детальные ответы пользователя"""
     resp = crud.get_response_by_session(db, data.session_id)
     if not resp:
-        raise HTTPException(404, "Анкета не найдена")
-    crud.upsert_answers(db, resp.id, [a.dict() for a in data.answers])
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+    
+    # Валидация и обработка комментариев
+    processed_answers = []
+    for answer in data.answers:
+        # Копируем данные ответа
+        answer_dict = answer.dict()
+        
+        # Проверяем только поле комментариев (question_id = 16)
+        if answer.question_id == 16 and answer.value and answer.value.strip():
+            is_valid, error_message = validate_comment(answer.value)
+            
+            if not is_valid:
+                # Не блокируем пользователя, но помечаем комментарий как не прошедший модерацию
+                print(f"⚠️  Комментарий НЕ прошёл модерацию: {error_message}")
+                print(f"   Текст: {answer.value[:100]}...")
+                answer_dict['moderated'] = False
+            else:
+                # Комментарий прошёл проверку
+                answer_dict['moderated'] = True
+        else:
+            # Для всех остальных полей - стандартная обработка
+            answer_dict['moderated'] = True
+            
+        processed_answers.append(answer_dict)
+    
+    crud.upsert_answers(db, resp.id, processed_answers)
     crud.update_response_status(db, data.session_id, "complete")
-    return {"status": "ok"}
+    return {"status": "ok", "session_id": data.session_id}
+
+class LikeRequest(BaseModel):
+    answer_id: int
+
+@router.post("/like")
+def like_comment(request: Request, data: LikeRequest, db: Session = Depends(get_db)):
+    """Лайкнуть комментарий (только один лайк с одного IP)"""
+    # Получаем IP-адрес пользователя
+    ip_address = request.client.host
+    
+    # Проверяем, существует ли такой ответ и прошёл ли он модерацию
+    answer = db.query(Answer).filter(Answer.id == data.answer_id).first()
+    if not answer:
+        raise HTTPException(status_code=404, detail="Комментарий не найден")
+    
+    # Запрещаем лайкать немодерированные комментарии
+    if not answer.moderated:
+        raise HTTPException(status_code=403, detail="Нельзя лайкать немодерированные комментарии")
+    
+    try:
+        # Пытаемся создать лайк
+        like = CommentLike(answer_id=data.answer_id, ip_address=ip_address)
+        db.add(like)
+        db.commit()
+        
+        # Получаем общее количество лайков для этого комментария
+        likes_count = db.query(CommentLike).filter(CommentLike.answer_id == data.answer_id).count()
+        
+        return {"status": "liked", "likes_count": likes_count}
+    
+    except IntegrityError:
+        # Пользователь уже лайкнул этот комментарий
+        db.rollback()
+        likes_count = db.query(CommentLike).filter(CommentLike.answer_id == data.answer_id).count()
+        return {"status": "already_liked", "likes_count": likes_count}

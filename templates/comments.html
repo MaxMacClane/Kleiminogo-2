@@ -106,14 +106,61 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.9em;
-            color: #7f8c8d;
-            border-top: 1px solid #ecf0f1;
+            gap: 15px;
+            margin-top: 15px;
             padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
         }
 
         .comment-date {
+            color: #7f8c8d;
+            font-size: 0.9em;
             font-weight: 500;
+        }
+
+        /* Стили для лайков */
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .like-btn {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            border-radius: 15px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .like-btn:hover {
+            background: rgba(52, 152, 219, 0.15);
+            border-color: #3498db;
+            color: #3498db;
+            transform: scale(1.05);
+        }
+
+        .like-btn.liked {
+            background: rgba(39, 174, 96, 0.9);
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .like-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .likes-count {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 0.9em;
         }
 
         .comment-number {
@@ -239,8 +286,13 @@
             <div class="comment-card">
                 <div class="comment-text">{{ comment.text }}</div>
                 <div class="comment-meta">
-                    <div class="comment-date">{{ comment.created_at }}</div>
-                    <div class="comment-number">#{{ loop.index }}</div>
+                    <span class="comment-date">{{ comment.created_at }}</span>
+                    <div class="comment-likes">
+                        <button class="like-btn" data-comment-id="{{ comment.answer_id }}">
+                            <span>👍</span>
+                        </button>
+                        <span class="likes-count">{{ comment.likes_count }}</span>
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -261,5 +313,60 @@
             <p>Инициативная группа жителей ДНП "Клеймёново-2" | 2025</p>
         </div>
     </div>
+
+    <!-- JavaScript для лайков комментариев -->
+    <script>
+        // Обработка лайков комментариев
+        document.addEventListener('DOMContentLoaded', function() {
+            const likeButtons = document.querySelectorAll('.like-btn');
+            
+            likeButtons.forEach(button => {
+                button.addEventListener('click', async function() {
+                    const commentId = this.getAttribute('data-comment-id');
+                    const likesCountSpan = this.nextElementSibling;
+                    
+                    try {
+                        const response = await fetch('/survey/like', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                answer_id: parseInt(commentId)
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'liked') {
+                            // Успешно лайкнули
+                            this.classList.add('liked');
+                            likesCountSpan.textContent = result.likes_count;
+                            this.disabled = true;
+                            
+                            // Небольшая анимация
+                            this.style.transform = 'scale(1.2)';
+                            setTimeout(() => {
+                                this.style.transform = 'scale(1)';
+                            }, 200);
+                            
+                        } else if (result.status === 'already_liked') {
+                            // Уже лайкали этот комментарий
+                            this.classList.add('liked');
+                            this.disabled = true;
+                            likesCountSpan.textContent = result.likes_count;
+                            
+                            // Показываем уведомление
+                            alert('Вы уже лайкнули этот комментарий!');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Ошибка при лайке:', error);
+                        alert('Ошибка при добавлении лайка');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html> 

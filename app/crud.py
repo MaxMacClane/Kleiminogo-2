@@ -108,8 +108,18 @@ def upsert_answers(db: Session, response_id: int, answers: list):
         existing = db.query(models.Answer).filter_by(response_id=response_id, question_id=ans['question_id']).first()
         if existing:
             existing.value = ans['value']
+            # Обновляем поле модерации, если оно передано
+            if 'moderated' in ans:
+                existing.moderated = ans['moderated']
         else:
-            db.add(models.Answer(response_id=response_id, question_id=ans['question_id'], value=ans['value']))
+            # При создании нового ответа учитываем поле модерации
+            moderated = ans.get('moderated', True)  # По умолчанию True
+            db.add(models.Answer(
+                response_id=response_id, 
+                question_id=ans['question_id'], 
+                value=ans['value'],
+                moderated=moderated
+            ))
     db.commit()
 
 # Обновить статус анкеты

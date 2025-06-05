@@ -1,9 +1,14 @@
+import os
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения из .env файла
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.api import survey
 from app.api.stats import get_survey_statistics, generate_bokeh_charts, detect_device_type, get_comments_data, get_all_comments
-import os
 
 app = FastAPI(
     title="Опрос жителей Клеймёново-2",

@@ -408,7 +408,8 @@ def create_dynamic_priority_chart(stats: Dict, device_type: str = 'desktop'):
     p.yaxis.visible = False
     p.ygrid.visible = False
     
-    p.xgrid.grid_line_color = "#e0e0e0"
+    # Убираем вертикальные линии (xgrid) полностью
+    p.xgrid.grid_line_color = None
     p.y_range.start = 0
     p.y_range.end = 42  # Увеличенный диапазон для названий в две строчки
     
@@ -689,7 +690,7 @@ def generate_bokeh_charts(stats: Dict, device_type: str = 'desktop') -> str:
 def get_comments_data() -> Dict:
     """
     Получает комментарии жителей для отображения на дашборде
-    Возвращает последние 3 комментария и общую статистику
+    Возвращает топ-3 комментария по лайкам и общую статистику
     """
     db = SessionLocal()
     try:
@@ -698,16 +699,21 @@ def get_comments_data() -> Dict:
         SELECT 
             q.id as question_id,
             q.text as question_text,
+            a.id as answer_id,
             a.value as comment_text,
-            r.created_at as created_at
+            r.created_at as created_at,
+            COUNT(cl.id) as likes_count
         FROM questions q
         LEFT JOIN answers a ON q.id = a.question_id
         LEFT JOIN responses r ON a.response_id = r.id
+        LEFT JOIN comment_likes cl ON a.id = cl.answer_id
         WHERE r.status = 'complete' 
         AND (LOWER(q.text) LIKE '%комментари%' OR LOWER(q.text) LIKE '%предложени%')
         AND a.value IS NOT NULL 
         AND TRIM(a.value) != ''
-        ORDER BY r.created_at DESC
+        AND a.moderated = 1
+        GROUP BY q.id, q.text, a.id, a.value, r.created_at
+        ORDER BY likes_count DESC, r.created_at DESC
         """
         
         # Загружаем данные в pandas DataFrame
@@ -725,7 +731,7 @@ def get_comments_data() -> Dict:
         
         total_comments = len(df)
         
-        # Получаем последние 3 комментария
+        # Получаем топ-3 комментария (по лайкам, потом по дате)
         recent_comments = []
         for _, row in df.head(3).iterrows():
             comment_text = row['comment_text']
@@ -737,8 +743,10 @@ def get_comments_data() -> Dict:
                 preview_text = comment_text
             
             recent_comments.append({
+                'answer_id': int(row['answer_id']),
                 'text': preview_text,
                 'full_text': comment_text,
+                'likes_count': int(row['likes_count']),
                 'created_at': row['created_at'].strftime('%d.%m.%Y') if pd.notna(row['created_at']) and hasattr(row['created_at'], 'strftime') else str(row['created_at']) if pd.notna(row['created_at']) else 'Дата неизвестна'
             })
         
@@ -754,21 +762,27 @@ def get_comments_data() -> Dict:
 def get_all_comments() -> List[Dict]:
     """
     Получает все комментарии для отдельной страницы
+    Сортирует по лайкам (популярности), затем по дате
     """
     db = SessionLocal()
     try:
         query = """
         SELECT 
+            a.id as answer_id,
             a.value as comment_text,
-            r.created_at as created_at
+            r.created_at as created_at,
+            COUNT(cl.id) as likes_count
         FROM questions q
         LEFT JOIN answers a ON q.id = a.question_id
         LEFT JOIN responses r ON a.response_id = r.id
+        LEFT JOIN comment_likes cl ON a.id = cl.answer_id
         WHERE r.status = 'complete' 
         AND (LOWER(q.text) LIKE '%комментари%' OR LOWER(q.text) LIKE '%предложени%')
         AND a.value IS NOT NULL 
         AND TRIM(a.value) != ''
-        ORDER BY r.created_at DESC
+        AND a.moderated = 1
+        GROUP BY a.id, a.value, r.created_at
+        ORDER BY likes_count DESC, r.created_at DESC
         """
         
         df = pd.read_sql_query(query, db.bind)
@@ -782,7 +796,9 @@ def get_all_comments() -> List[Dict]:
         comments = []
         for _, row in df.iterrows():
             comments.append({
+                'answer_id': int(row['answer_id']),
                 'text': row['comment_text'],
+                'likes_count': int(row['likes_count']),
                 'created_at': row['created_at'].strftime('%d.%m.%Y %H:%M') if pd.notna(row['created_at']) and hasattr(row['created_at'], 'strftime') else str(row['created_at']) if pd.notna(row['created_at']) else 'Дата неизвестна'
             })
         

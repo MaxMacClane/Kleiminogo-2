@@ -30,6 +30,10 @@ ENV/
 # Database
 *.db
 survey.db
+data/db.sqlite3
+
+# Personal data (согласия жителей)
+consents/
 
 # IDE
 .vscode/

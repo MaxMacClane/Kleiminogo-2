@@ -482,6 +482,7 @@
             position: relative;
         }
 
+        /* УБИРАЕМ КАВЫЧКИ - закомментировано
         .comment-content p::before {
             content: '"';
             font-size: 3em;
@@ -491,11 +492,53 @@
             top: -10px;
             opacity: 0.3;
         }
+        */
 
         .comment-date {
             color: #7f8c8d;
             font-size: 0.9em;
             font-weight: 500;
+        }
+
+        /* Стили для лайков */
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .like-btn {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .like-btn:hover {
+            background: rgba(52, 152, 219, 0.15);
+            border-color: #3498db;
+            color: #3498db;
+            transform: scale(1.05);
+        }
+
+        .like-btn.liked {
+            background: rgba(39, 174, 96, 0.9);
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .likes-count {
+            font-weight: bold;
+            color: #667eea;
         }
 
         .carousel-btn {
@@ -509,7 +552,7 @@
             width: 50px;
             height: 50px;
             cursor: pointer;
-            font-size: 24px;
+            font-size: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -528,8 +571,28 @@
             left: 15px;
         }
 
+        .carousel-btn.prev::before {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 12px solid white;
+            margin-left: -2px;
+        }
+
         .carousel-btn.next {
             right: 15px;
+        }
+
+        .carousel-btn.next::before {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid white;
+            margin-right: -2px;
         }
 
         .carousel-indicators {
@@ -666,17 +729,21 @@
                             {% for comment in comments_data.recent_comments %}
                             <div class="comment-slide">
                                 <div class="comment-content">
-                                    <p>"{{ comment.text }}"</p>
+                                    <p>{{ comment.text }}</p>
                                     <div class="comment-date">{{ comment.created_at }}</div>
+                                    <div class="comment-likes">
+                                        <button class="like-btn" data-comment-id="{{ comment.answer_id }}">
+                                            <span>👍</span>
+                                        </button>
+                                        <span class="likes-count">{{ comment.likes_count }}</span>
+                                    </div>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                         <button class="carousel-btn prev" onclick="moveCarousel(-1)">
-                            <span>‹</span>
                         </button>
                         <button class="carousel-btn next" onclick="moveCarousel(1)">
-                            <span>›</span>
                         </button>
                     </div>
                     <div class="carousel-indicators">
@@ -967,6 +1034,61 @@
                     startAutoSlide();
                 });
             }
+        });
+    </script>
+
+    <!-- JavaScript для лайков комментариев -->
+    <script>
+        // Обработка лайков комментариев
+        document.addEventListener('DOMContentLoaded', function() {
+            const likeButtons = document.querySelectorAll('.like-btn');
+            
+            likeButtons.forEach(button => {
+                button.addEventListener('click', async function() {
+                    const commentId = this.getAttribute('data-comment-id');
+                    const likesCountSpan = this.nextElementSibling;
+                    
+                    try {
+                        const response = await fetch('/survey/like', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                answer_id: parseInt(commentId)
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'liked') {
+                            // Успешно лайкнули
+                            this.classList.add('liked');
+                            likesCountSpan.textContent = result.likes_count;
+                            this.disabled = true;
+                            
+                            // Небольшая анимация
+                            this.style.transform = 'scale(1.2)';
+                            setTimeout(() => {
+                                this.style.transform = 'scale(1)';
+                            }, 200);
+                            
+                        } else if (result.status === 'already_liked') {
+                            // Уже лайкали этот комментарий
+                            this.classList.add('liked');
+                            this.disabled = true;
+                            likesCountSpan.textContent = result.likes_count;
+                            
+                            // Показываем уведомление
+                            alert('Вы уже лайкнули этот комментарий!');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Ошибка при лайке:', error);
+                        alert('Ошибка при добавлении лайка');
+                    }
+                });
+            });
         });
     </script>
 </body>

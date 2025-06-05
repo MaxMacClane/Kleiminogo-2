@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -9,13 +9,19 @@ Base = declarative_base()
 class Question(Base):
     """
     Таблица вопросов опроса.
-    Каждый вопрос хранится отдельно, чтобы можно было динамически менять структуру опроса.
+    Каждый вопрос имеет текст, тип и порядок отображения.
     """
     __tablename__ = "questions"
     id = Column(Integer, primary_key=True)  # Уникальный идентификатор вопроса
-    text = Column(String, nullable=False)   # Текст вопроса (например: "ФИО", "Поддерживаете создание СНТ?")
-    qtype = Column(String, nullable=False)  # Тип вопроса (text, choice, number и т.д.)
-    order = Column(Integer, nullable=False) # Порядок отображения вопроса в форме
+    text = Column(Text, nullable=False)  # Текст вопроса
+    qtype = Column(String, nullable=False)  # Тип вопроса (choice, text, checkbox и т.д.)
+    order = Column(Integer, nullable=False)  # Порядок отображения вопроса
+    
+    # Связь с ответами
+    answers = relationship("Answer", back_populates="question")
+
+    def __repr__(self):
+        return f"<Question id={self.id} text='{self.text[:50]}...' type={self.qtype} order={self.order}>"
 
 class Response(Base):
     """
@@ -36,22 +42,25 @@ class Response(Base):
 
 class Answer(Base):
     """
-    Таблица индивидуальных ответов на вопросы.
-    Каждый ответ на отдельный вопрос — это отдельная запись.
+    Таблица отдельных ответов на каждый вопрос.
+    Каждый ответ связан с конкретным респондентом (response_id) и вопросом (question_id).
     """
     __tablename__ = "answers"
-    id = Column(Integer, primary_key=True)  # Уникальный идентификатор записи
-    response_id = Column(Integer, ForeignKey("responses.id"))   # Ссылка на респондента (response)
-    question_id = Column(Integer, ForeignKey("questions.id"))   # Ссылка на вопрос (question)
-    value = Column(Text, nullable=False)                        # Значение ответа (текст, число, вариант и т.д.)
+    id = Column(Integer, primary_key=True)  # Уникальный идентификатор ответа
+    response_id = Column(Integer, ForeignKey("responses.id"), nullable=False)  # Связь с респондентом
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)  # Связь с вопросом
+    value = Column(Text, nullable=False)  # Значение ответа (текст или выбранный вариант)
+    moderated = Column(Boolean, default=True, nullable=False)  # Прошёл ли ответ модерацию (False для мата/спама)
 
-    # Связь с таблицей Response (один response — много answers)
+    # Связи
     response = relationship("Response", back_populates="answers")
-    # Можно добавить связь с Question, если нужно получать текст вопроса из ответа
-    # question = relationship("Question")
+    question = relationship("Question", back_populates="answers")
+    
+    # Связь с лайками для этого ответа (если это комментарий)
+    likes = relationship("CommentLike", back_populates="answer")
 
     def __repr__(self):
-        return f"<Answer id={self.id} response_id={self.response_id} question_id={self.question_id} value={self.value[:30] if self.value else ''}>"
+        return f"<Answer id={self.id} response_id={self.response_id} question_id={self.question_id} value='{self.value[:50]}...' moderated={self.moderated}>"
 
 class VerificationCode(Base):
     """
@@ -67,3 +76,23 @@ class VerificationCode(Base):
     expires_at = Column(DateTime, nullable=False)  # когда истекает код
     used = Column(Boolean, default=False)  # использован ли код
     last_request_at = Column(DateTime, default=datetime.utcnow)  # когда последний раз запрашивали код
+
+class CommentLike(Base):
+    """
+    Таблица лайков для комментариев.
+    Каждый лайк привязан к конкретному ответу (Answer) и IP-адресу для предотвращения повторных лайков.
+    """
+    __tablename__ = "comment_likes"
+    id = Column(Integer, primary_key=True)
+    answer_id = Column(Integer, ForeignKey("answers.id"), nullable=False)  # Ответ, который лайкнули
+    ip_address = Column(String(45), nullable=False)  # IP-адрес пользователя (IPv4/IPv6)
+    created_at = Column(DateTime, server_default=func.now())  # Время лайка
+
+    # Связь с ответом
+    answer = relationship("Answer", back_populates="likes")
+
+    # Уникальность: один IP может лайкнуть комментарий только один раз
+    __table_args__ = (UniqueConstraint('answer_id', 'ip_address'),)
+
+    def __repr__(self):
+        return f"<CommentLike id={self.id} answer_id={self.answer_id} ip={self.ip_address}>"
