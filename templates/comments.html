@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Комментарии жителей - ДНП "Клеймёново-2"</title>
+    
+    {% include 'analytics.html' %}
+    
     <style>
         * {
             margin: 0;
@@ -305,6 +308,7 @@
         {% endif %}
 
         <div class="navigation">
+            <a href="/" class="btn">🏠 На главную</a>
             <a href="/stats" class="btn">← К статистике</a>
             <a href="/details" class="btn">Оставить комментарий</a>
         </div>

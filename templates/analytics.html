@@ -1,0 +1,88 @@
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SJ85PJWKRE"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SJ85PJWKRE', {
+    page_title: '{{ page_title|default("ДНП Клеймёново-2") }}',
+    page_location: window.location.href
+  });
+</script>
+
+<!-- Яндекс.Метрика -->
+<script type="text/javascript" >
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();
+   for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+   k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(102452706, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true,
+        webvisor:true,
+        trackHash:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/102452706" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Яндекс.Метрика -->
+
+<!-- Отслеживание пользовательских событий -->
+<script>
+// Функция для отправки событий в Google Analytics
+function trackEvent(action, category = 'User Interaction', label = '') {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', action, {
+      'event_category': category,
+      'event_label': label,
+      'value': 1
+    });
+  }
+}
+
+// Функция для отправки событий в Яндекс.Метрику  
+function trackYandexEvent(action, params = {}) {
+  if (typeof ym !== 'undefined') {
+    ym(102452706, 'reachGoal', action, params);
+  }
+}
+
+// Отслеживание кликов по кнопкам
+document.addEventListener('DOMContentLoaded', function() {
+  // Отслеживание кнопки "Перейти к расширенному опросу"
+  const detailBtn = document.querySelector('a[href="/details"]');
+  if (detailBtn) {
+    detailBtn.addEventListener('click', function() {
+      trackEvent('click_detailed_survey', 'Survey', 'Main to Details');
+      trackYandexEvent('detailed_survey_start');
+    });
+  }
+
+  // Отслеживание кнопки "Статистика"
+  const statsBtn = document.querySelector('a[href="/stats"]');
+  if (statsBtn) {
+    statsBtn.addEventListener('click', function() {
+      trackEvent('view_statistics', 'Navigation', 'Statistics Page');
+      trackYandexEvent('view_statistics');
+    });
+  }
+
+  // Отслеживание отправки формы
+  const form = document.getElementById('surveyForm');
+  if (form) {
+    form.addEventListener('submit', function() {
+      trackEvent('form_submit', 'Survey', 'Basic Form');
+      trackYandexEvent('form_submit_basic');
+    });
+  }
+
+  // Отслеживание времени на странице (через 30 сек)
+  setTimeout(function() {
+    trackEvent('engaged_user', 'Engagement', '30_seconds');
+    trackYandexEvent('engaged_30s');
+  }, 30000);
+});
+</script> 

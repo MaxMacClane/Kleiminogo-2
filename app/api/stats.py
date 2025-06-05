@@ -58,7 +58,7 @@ def get_survey_statistics() -> Dict:
     """
     db = SessionLocal()
     try:
-        # Получаем все завершенные ответы с информацией о вопросах
+        # Получаем ответы - сначала все завершенные
         query = """
         SELECT 
             q.id as question_id,
@@ -79,10 +79,27 @@ def get_survey_statistics() -> Dict:
         df = pd.read_sql_query(query, db.bind)
         
         # Получаем общую статистику
-        total_responses = df['response_id'].nunique() if not df.empty else 0
+        total_responses_complete = df[df['response_status'] == 'complete']['response_id'].nunique() if not df.empty else 0
+        
+        # Для базовых вопросов получаем дополнительный запрос
+        query_basic = """
+        SELECT 
+            q.id as question_id,
+            a.value as answer_value,
+            r.id as response_id,
+            r.status as response_status
+        FROM questions q
+        LEFT JOIN answers a ON q.id = a.question_id
+        LEFT JOIN responses r ON a.response_id = r.id
+        WHERE q.id IN (4, 5) AND r.status IN ('consent', 'complete')
+        """
+        
+        df_basic = pd.read_sql_query(query_basic, db.bind)
+        total_responses_basic = df_basic['response_id'].nunique() if not df_basic.empty else 0
         
         stats = {
-            'total_responses': total_responses,
+            'total_responses': total_responses_complete,
+            'total_basic_responses': total_responses_basic,  # Базовые ответы (включая consent)
             'questions_stats': {}
         }
         
@@ -102,7 +119,20 @@ def get_survey_statistics() -> Dict:
             question_text = question_info['question_text']
             question_type = question_info['question_type']
             
-            # Подсчитываем ответы для этого вопроса
+            # Для базовых вопросов (4 и 5) используем данные из df_basic
+            if question_id in [4, 5] and not df_basic.empty:
+                basic_question_data = df_basic[df_basic['question_id'] == question_id]
+                if not basic_question_data.empty:
+                    value_counts = basic_question_data['answer_value'].value_counts()
+                    stats['questions_stats'][question_id] = {
+                        'text': question_text,
+                        'type': question_type,
+                        'values': value_counts.to_dict(),
+                        'total': value_counts.sum()
+                    }
+                    continue
+            
+            # Подсчитываем ответы для остальных вопросов
             if question_type in ['choice', 'priority']:
                 # Для вопросов с выбором считаем частоту каждого варианта
                 value_counts = question_data['answer_value'].value_counts()

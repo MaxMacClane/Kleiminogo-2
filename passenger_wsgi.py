@@ -4,19 +4,17 @@
 import sys
 import os
 
+# Активируем виртуальное окружение
+venv_path = '/home/users/j/j01384090/miniconda3/envs/kleymenovo'
+if os.path.exists(venv_path):
+    sys.path.insert(0, os.path.join(venv_path, 'lib', 'python3.11', 'site-packages'))
+
 # Добавляем путь к проекту
 sys.path.insert(0, os.path.dirname(__file__))
 
 # Импортируем приложение FastAPI
 from app.main import app
 
-# Для Джино хостинга - используем asgiref для конвертации ASGI в WSGI
-try:
-    from asgiref.wsgi import WsgiToAsgi
-    # Создаем WSGI приложение из FastAPI (ASGI)
-    application = WsgiToAsgi(app)
-except ImportError:
-    # Если asgiref не установлен, простая заглушка
-    def application(environ, start_response):
-        start_response('200 OK', [('Content-Type', 'text/plain; charset=utf-8')])
-        return [b"FastAPI app error: asgiref not installed"] 
+# Для Джино хостинга - используем a2wsgi для конвертации ASGI в WSGI
+from a2wsgi import ASGIMiddleware
+application = ASGIMiddleware(app) 

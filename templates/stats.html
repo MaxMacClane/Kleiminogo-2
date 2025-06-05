@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Статистика опроса - ДНП "Клеймёново-2"</title>
     
+    {% include 'analytics.html' %}
+    
     <!-- Подключаем CSS Bokeh -->
     <link rel="stylesheet" type="text/css" href="https://cdn.bokeh.org/bokeh/release/bokeh-3.0.3.min.css">
     
@@ -676,6 +678,10 @@
             <h2>🎯 Общая информация</h2>
             <div class="summary-grid">
                 <div class="summary-card">
+                    <h3>{{ statistics.total_basic_responses }}</h3>
+                    <p>Ответили на базовые вопросы</p>
+                </div>
+                <div class="summary-card">
                     <h3>{{ statistics.total_responses }}</h3>
                     <p>Завершенных анкет</p>
                 </div>
@@ -690,7 +696,7 @@
         <div class="dashboard-section">
             <!-- 1. Пироги -->
             <div class="dashboard-card">
-                <h3>Поддержка и готовность</h3>
+                <h3>Поддержка и готовность (все ответившие)</h3>
                 <div class="dashboard-row">
                     <div class="dashboard-graph">{{ charts.snt_support.div|safe }}</div>
                     <div class="dashboard-graph">{{ charts.financial_ready.div|safe }}</div>

@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Опрос ДНП "Клеймёново-2"</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    {% include 'analytics.html' %}
+    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -395,7 +397,7 @@
                 <ul>
                     <li>Исключение юридического лица из ЕГРЮЛ производится на основании ст. 21.1 Федерального закона №129-ФЗ "О государственной регистрации юридических лиц и индивидуальных предпринимателей".</li>
                     <li>Причина — наличие в ЕГРЮЛ сведений о недостоверности данных.</li>
-                    <li>Все сведения подтверждены выпиской из ЕГРЮЛ от 03.06.2025 (<a href="/static/docs/ЕГРЮ_выписка.pdf" target="_blank">PDF</a>).</li>
+                    <li>Все сведения подтверждены выпиской из ЕГРЮЛ от 03.06.2025 (<a href="/static/ЕГРЮЛ_выписка.pdf" target="_blank">PDF</a>).</li>
                 </ul>
             </div>
         </div>
@@ -479,9 +481,9 @@
                 <div class="form-group">
                     <label for="kadastr">Кадастровый номер участка</label>
                     <input type="text" id="kadastr" name="kadastr" required 
-                           pattern="^\d{2}:\d{2}:\d{6}:\d{3}$"
-                           placeholder="50:XX:XXXXXX:XXX"
-                           title="Кадастровый номер должен быть в формате XX:XX:XXXXXX:XXX (где X - цифры)">
+                           pattern="^\d{2}:\d{2}:\d{6}:\d{4}$"
+                           placeholder="50:XX:XXXXXX:XXXX"
+                           title="Кадастровый номер должен быть в формате XX:XX:XXXXXX:XXXX (где X - цифры)">
                 </div>
                 <div class="form-group">
                     <label for="snt_support">Готовы ли вы участвовать в создании нового СНТ?</label>
@@ -578,7 +580,7 @@
             if (unfinishedRes.has_unfinished) {
                 const continueChoice = confirm(
                     `Найдена незавершенная анкета от ${new Date(unfinishedRes.created_at).toLocaleString('ru-RU')}.\n\n` +
-                    `Вы можете только продолжить её заполнение.\n\n` +
+                    `Вы можете продолжить её заполнение.\n\n` +
                     `Хотите продолжить? На ваш email будет отправлен код подтверждения.`
                 );
                 
@@ -672,8 +674,8 @@
             const phone = document.getElementById('phone').value;
             const email = document.getElementById('email').value;
             const kadastr = document.getElementById('kadastr').value;
-            const snt_support = document.querySelector('select[name="snt_support"] option:selected')?.value || '';
-            const payment_ready = document.querySelector('select[name="payment_ready"] option:selected')?.value || '';
+            const snt_support = document.getElementById('snt_support').value;
+            const payment_ready = document.getElementById('payment_ready').value;
             localStorage.setItem('surveyBase', JSON.stringify({ fio, phone, email, kadastr, snt_support, payment_ready, consent }));
         });
         const consentCheckbox = document.querySelector('input[name="consent"]');
@@ -683,8 +685,8 @@
                 const phone = document.getElementById('phone').value;
                 const email = document.getElementById('email').value;
                 const kadastr = document.getElementById('kadastr').value;
-                const snt_support = document.querySelector('select[name="snt_support"] option:selected')?.value || '';
-                const payment_ready = document.querySelector('select[name="payment_ready"] option:selected')?.value || '';
+                const snt_support = document.getElementById('snt_support').value;
+                const payment_ready = document.getElementById('payment_ready').value;
                 const consent = consentCheckbox.checked;
                 localStorage.setItem('surveyBase', JSON.stringify({ fio, phone, email, kadastr, snt_support, payment_ready, consent }));
             });
@@ -700,7 +702,7 @@
             return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
         }
         function validateKadastr(kadastr) {
-            return /^\d{2}:\d{2}:\d{6}:\d{3}$/.test(kadastr.trim());
+            return /^\d{2}:\d{2}:\d{6}:\d{4}$/.test(kadastr.trim());
         }
         function setValidationClass(input, valid) {
             input.classList.remove('input-error', 'input-success');
