@@ -11,6 +11,7 @@ import math
 from typing import Dict, List
 from app.db import SessionLocal
 from app.models import Question, Answer, Response
+import time
 
 # Конфигурация размеров графиков
 CHART_SIZES = {
@@ -37,6 +38,21 @@ CHART_SIZES = {
     }
 }
 
+# === КЭШ ДЛЯ СТАТИСТИКИ ===
+_statistics_cache = None
+_statistics_cache_time = 0
+_CACHE_TTL = 180  # 3 минуты
+
+# === КЭШ ДЛЯ ГРАФИКОВ И КОММЕНТАРИЕВ ===
+_bokeh_charts_cache = None
+_bokeh_charts_cache_time = 0
+_comments_data_cache = None
+_comments_data_cache_time = 0
+_all_comments_cache = None
+_all_comments_cache_time = 0
+
+CACHE_TTL = 180  # 3 минуты
+
 def get_chart_size(chart_type: str, device_type: str = 'desktop') -> Dict:
     """Получает размеры графика в зависимости от типа устройства"""
     return CHART_SIZES.get(device_type, CHART_SIZES['desktop']).get(chart_type, {'width': 500, 'height': 400})
@@ -57,6 +73,7 @@ def get_survey_statistics() -> Dict:
     Возвращает данные готовые для создания графиков Bokeh
     """
     db = SessionLocal()
+    t0 = time.time()
     try:
         # Получаем ответы - сначала все завершенные
         query = """
@@ -74,13 +91,12 @@ def get_survey_statistics() -> Dict:
         WHERE r.status = 'complete'
         ORDER BY q.[order], a.value
         """
-        
         # Загружаем данные в pandas DataFrame
+        t1 = time.time()
         df = pd.read_sql_query(query, db.bind)
-        
+        t2 = time.time()
         # Получаем общую статистику
         total_responses_complete = df[df['response_status'] == 'complete']['response_id'].nunique() if not df.empty else 0
-        
         # Для базовых вопросов получаем дополнительный запрос
         query_basic = """
         SELECT 
@@ -93,35 +109,38 @@ def get_survey_statistics() -> Dict:
         LEFT JOIN responses r ON a.response_id = r.id
         WHERE q.id IN (4, 5) AND r.status IN ('consent', 'complete')
         """
-        
         df_basic = pd.read_sql_query(query_basic, db.bind)
-        total_responses_basic = df_basic['response_id'].nunique() if not df_basic.empty else 0
-        
+        # --- Новый код: получаем response_id с кадастровым номером ---
+        query_kadastr = """
+        SELECT DISTINCT a.response_id
+        FROM answers a
+        WHERE a.question_id = 2 AND a.value IS NOT NULL AND a.value != ''
+        """
+        df_kadastr = pd.read_sql_query(query_kadastr, db.bind)
+        responses_with_kadastr = set(df_kadastr['response_id'])
+        t3 = time.time()
+        total_responses_basic = df_basic[df_basic['response_status'] == 'consent']['response_id'].nunique() if not df_basic.empty else 0
         stats = {
             'total_responses': total_responses_complete,
             'total_basic_responses': total_responses_basic,  # Базовые ответы (включая consent)
             'questions_stats': {}
         }
-        
         if df.empty:
+            print(f"[PROFILE] SQL+Pandas: {t2-t0:.3f}s, Basic SQL: {t3-t2:.3f}s")
             return stats
-            
         # Анализируем каждый вопрос отдельно
         for question_id in df['question_id'].unique():
             if pd.isna(question_id):
                 continue
-                
             question_data = df[df['question_id'] == question_id]
             if question_data.empty:
                 continue
-                
             question_info = question_data.iloc[0]
             question_text = question_info['question_text']
             question_type = question_info['question_type']
-            
-            # Для базовых вопросов (4 и 5) используем данные из df_basic
+            # Для базовых вопросов (4 и 5) используем данные из df_basic, но фильтруем по response_id с кадастром
             if question_id in [4, 5] and not df_basic.empty:
-                basic_question_data = df_basic[df_basic['question_id'] == question_id]
+                basic_question_data = df_basic[(df_basic['question_id'] == question_id) & (df_basic['response_id'].isin(responses_with_kadastr))]
                 if not basic_question_data.empty:
                     value_counts = basic_question_data['answer_value'].value_counts()
                     stats['questions_stats'][question_id] = {
@@ -131,10 +150,8 @@ def get_survey_statistics() -> Dict:
                         'total': value_counts.sum()
                     }
                     continue
-            
             # Подсчитываем ответы для остальных вопросов
             if question_type in ['choice', 'priority']:
-                # Для вопросов с выбором считаем частоту каждого варианта
                 value_counts = question_data['answer_value'].value_counts()
                 stats['questions_stats'][question_id] = {
                     'text': question_text,
@@ -143,14 +160,11 @@ def get_survey_statistics() -> Dict:
                     'total': value_counts.sum()
                 }
             elif question_type == 'checkbox':
-                # Для чекбоксов нужно разобрать множественные ответы
-                # Ответы сохраняются как строка через запятую
                 all_options = []
                 for answer_value in question_data['answer_value'].dropna():
                     if answer_value:
                         options = [opt.strip() for opt in str(answer_value).split(',')]
                         all_options.extend(options)
-                
                 checkbox_counts = pd.Series(all_options).value_counts()
                 stats['questions_stats'][question_id] = {
                     'text': question_text,
@@ -158,11 +172,59 @@ def get_survey_statistics() -> Dict:
                     'values': checkbox_counts.to_dict(),
                     'total': len(question_data['answer_value'].dropna())
                 }
-        
+        t4 = time.time()
+        print(f"[PROFILE] SQL+Pandas: {t2-t0:.3f}s, Basic SQL: {t3-t2:.3f}s, Stats processing: {t4-t3:.3f}s")
+        # === Подсчёт трёх типов анкет ===
+        # Получаем все ответы (response_id, question_id, value)
+        query_all_answers = """
+        SELECT a.response_id, a.question_id, a.value, r.status
+        FROM answers a
+        LEFT JOIN responses r ON a.response_id = r.id
+        WHERE r.status IN ('consent', 'complete')
+        """
+        df_all = pd.read_sql_query(query_all_answers, db.bind)
+        # Список вопросов второй части
+        second_part_qids = [6,7,8,9,10,11,12,13,14,15,16,17]
+        # Есть ли кадастровый номер у response_id
+        kadastr_map = df_all[(df_all['question_id'] == 2) & df_all['value'].notnull() & (df_all['value'] != '')].groupby('response_id').size() > 0
+        # Есть ли ответы на вторую часть у response_id
+        second_part_map = df_all[(df_all['question_id'].isin(second_part_qids)) & df_all['value'].notnull() & (df_all['value'] != '')].groupby('response_id').size() > 0
+        # Статус анкеты
+        status_map = df_all.drop_duplicates('response_id').set_index('response_id')['status']
+        # Считаем
+        full_with_kadastr = 0
+        partial_with_kadastr = 0
+        only_second_without_kadastr = 0
+        for rid in df_all['response_id'].unique():
+            has_kadastr = kadastr_map.get(rid, False)
+            has_second = second_part_map.get(rid, False)
+            status = status_map.get(rid, None)
+            if has_kadastr and has_second and status == 'complete':
+                full_with_kadastr += 1
+            elif has_kadastr and not has_second and status == 'consent':
+                partial_with_kadastr += 1
+            elif not has_kadastr and has_second:
+                only_second_without_kadastr += 1
+        stats['full_with_kadastr'] = full_with_kadastr
+        stats['partial_with_kadastr'] = partial_with_kadastr
+        stats['only_second_without_kadastr'] = only_second_without_kadastr
         return stats
-    
     finally:
         db.close()
+
+def get_survey_statistics_cached() -> Dict:
+    """
+    Кэшированная версия get_survey_statistics().
+    Кэш обновляется раз в 3 минуты.
+    """
+    global _statistics_cache, _statistics_cache_time
+    now = time.time()
+    if _statistics_cache is not None and (now - _statistics_cache_time) < _CACHE_TTL:
+        return _statistics_cache
+    stats = get_survey_statistics()
+    _statistics_cache = stats
+    _statistics_cache_time = now
+    return stats
 
 def create_pie_chart(question_data: Dict, title: str, device_type: str = 'desktop'):
     """Создает круговую диаграмму для вопроса"""
@@ -644,6 +706,7 @@ def generate_bokeh_charts(stats: Dict, device_type: str = 'desktop') -> str:
     """
     Генерирует все графики Bokeh как отдельные независимые компоненты
     """
+    t0 = time.time()
     charts = {}  # Словарь для хранения отдельных графиков
     
     # График 1: Поддержка создания СНТ (question_id = 4)
@@ -714,7 +777,8 @@ def generate_bokeh_charts(stats: Dict, device_type: str = 'desktop') -> str:
             all_scripts.append(chart_data['script'])
     
     combined_script = '\n'.join(all_scripts)
-    
+    t1 = time.time()
+    print(f"[PROFILE] Bokeh charts: {t1-t0:.3f}s")
     return combined_script, charts 
 
 def get_comments_data() -> Dict:
@@ -722,6 +786,7 @@ def get_comments_data() -> Dict:
     Получает комментарии жителей для отображения на дашборде
     Возвращает топ-3 комментария по лайкам и общую статистику
     """
+    t0 = time.time()
     db = SessionLocal()
     try:
         # Ищем question_id для комментариев (текст содержит "комментарии" или "предложения")
@@ -748,8 +813,10 @@ def get_comments_data() -> Dict:
         
         # Загружаем данные в pandas DataFrame
         df = pd.read_sql_query(query, db.bind)
+        t1 = time.time()
         
         if df.empty:
+            print(f"[PROFILE] Comments SQL+Pandas: {t1-t0:.3f}s")
             return {
                 'total_comments': 0,
                 'recent_comments': [],
@@ -780,6 +847,7 @@ def get_comments_data() -> Dict:
                 'created_at': row['created_at'].strftime('%d.%m.%Y') if pd.notna(row['created_at']) and hasattr(row['created_at'], 'strftime') else str(row['created_at']) if pd.notna(row['created_at']) else 'Дата неизвестна'
             })
         
+        print(f"[PROFILE] Comments SQL+Pandas: {t1-t0:.3f}s")
         return {
             'total_comments': total_comments,
             'recent_comments': recent_comments,
@@ -794,6 +862,7 @@ def get_all_comments() -> List[Dict]:
     Получает все комментарии для отдельной страницы
     Сортирует по лайкам (популярности), затем по дате
     """
+    t0 = time.time()
     db = SessionLocal()
     try:
         query = """
@@ -816,8 +885,10 @@ def get_all_comments() -> List[Dict]:
         """
         
         df = pd.read_sql_query(query, db.bind)
+        t1 = time.time()
         
         if df.empty:
+            print(f"[PROFILE] AllComments SQL+Pandas: {t1-t0:.3f}s")
             return []
         
         # Фильтруем пустые комментарии
@@ -832,7 +903,54 @@ def get_all_comments() -> List[Dict]:
                 'created_at': row['created_at'].strftime('%d.%m.%Y %H:%M') if pd.notna(row['created_at']) and hasattr(row['created_at'], 'strftime') else str(row['created_at']) if pd.notna(row['created_at']) else 'Дата неизвестна'
             })
         
+        print(f"[PROFILE] AllComments SQL+Pandas: {t1-t0:.3f}s")
         return comments
     
     finally:
-        db.close() 
+        db.close()
+
+# Кэшированная генерация графиков
+def generate_bokeh_charts_cached(stats: Dict, device_type: str = 'desktop'):
+    global _bokeh_charts_cache, _bokeh_charts_cache_time
+    now = time.time()
+    cache_key = f'{device_type}-{hash(str(stats))}'
+    if (
+        _bokeh_charts_cache is not None and
+        _bokeh_charts_cache.get('key') == cache_key and
+        (now - _bokeh_charts_cache_time) < CACHE_TTL
+    ):
+        return _bokeh_charts_cache['script'], _bokeh_charts_cache['charts']
+    script, charts = generate_bokeh_charts(stats, device_type)
+    _bokeh_charts_cache = {'key': cache_key, 'script': script, 'charts': charts}
+    _bokeh_charts_cache_time = now
+    return script, charts
+
+# Кэшированные комментарии (dashboard)
+def get_comments_data_cached() -> Dict:
+    global _comments_data_cache, _comments_data_cache_time
+    now = time.time()
+    if _comments_data_cache is not None and (now - _comments_data_cache_time) < CACHE_TTL:
+        return _comments_data_cache
+    data = get_comments_data()
+    _comments_data_cache = data
+    _comments_data_cache_time = now
+    return data
+
+# Кэшированные все комментарии (страница /comments)
+def get_all_comments_cached() -> List[Dict]:
+    global _all_comments_cache, _all_comments_cache_time
+    now = time.time()
+    if _all_comments_cache is not None and (now - _all_comments_cache_time) < CACHE_TTL:
+        return _all_comments_cache
+    data = get_all_comments()
+    _all_comments_cache = data
+    _all_comments_cache_time = now
+    return data
+
+def reset_stats_cache():
+    """Сбросить кэш статистики, графиков и комментариев"""
+    global _statistics_cache, _bokeh_charts_cache, _comments_data_cache, _all_comments_cache
+    _statistics_cache = None
+    _bokeh_charts_cache = None
+    _comments_data_cache = None
+    _all_comments_cache = None 

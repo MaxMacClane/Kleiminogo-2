@@ -11,6 +11,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from uuid import uuid4
 from sqlalchemy.exc import IntegrityError
+from app.api.stats import reset_stats_cache
 
 router = APIRouter(
     prefix="/survey",
@@ -157,6 +158,9 @@ def save_base(data: schemas.BaseStepSchema, db: Session = Depends(get_db)):
         filename = f"consents/consent_{data.session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         with open(filename, 'wb') as f:
             f.write(base64.b64decode(data.screenshot.split(',')[1]))
+    # --- Сброс кэша статистики, если есть кадастровый номер ---
+    if any(a.question_id == 2 and a.value for a in data.answers):
+        reset_stats_cache()
     return {"status": "ok", "session_id": data.session_id}
 
 @router.post("/details")
@@ -192,6 +196,7 @@ def save_details(data: schemas.DetailsStepSchema, db: Session = Depends(get_db))
     
     crud.upsert_answers(db, resp.id, processed_answers)
     crud.update_response_status(db, data.session_id, "complete")
+    reset_stats_cache()
     return {"status": "ok", "session_id": data.session_id}
 
 class LikeRequest(BaseModel):

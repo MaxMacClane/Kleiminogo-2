@@ -8,7 +8,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from app.api import survey
-from app.api.stats import get_survey_statistics, generate_bokeh_charts, detect_device_type, get_comments_data, get_all_comments
+from app.api.stats import get_survey_statistics, generate_bokeh_charts, detect_device_type
+from app.api.stats import get_survey_statistics_cached, generate_bokeh_charts_cached, get_comments_data_cached, get_all_comments_cached
 
 app = FastAPI(
     title="Опрос жителей Клеймёново-2",
@@ -28,6 +29,7 @@ templates = Jinja2Templates(directory="templates")
 # Пример главной страницы (можно расширить)
 from fastapi import Request
 from fastapi.responses import HTMLResponse
+import time
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -39,39 +41,38 @@ def thanks(request: Request):
 
 # Статистика с реальными данными и графиками Bokeh
 @app.get("/stats", response_class=HTMLResponse)
-def stats(request: Request):
+async def stats(request: Request):
     """Страница статистики с графиками"""
-    # Определяем тип устройства по User-Agent
     user_agent = request.headers.get("user-agent", "")
     device_type = detect_device_type(user_agent)
-    
-    # Получаем статистику
-    statistics = get_survey_statistics()
-    
-    # Получаем данные комментариев
-    comments_data = get_comments_data()
-    
-    # Генерируем графики
-    bokeh_script, charts = generate_bokeh_charts(statistics, device_type)
-    
-    return templates.TemplateResponse("stats.html", {
+    statistics = get_survey_statistics_cached()
+    comments_data = get_comments_data_cached()
+    bokeh_script, charts = generate_bokeh_charts_cached(statistics, device_type)
+    t0 = time.time()
+    resp = templates.TemplateResponse("stats.html", {
         "request": request,
         "statistics": statistics,
         "bokeh_script": bokeh_script,
         "charts": charts,
         "comments_data": comments_data
     })
+    t1 = time.time()
+    print(f"[PROFILE] Jinja2 stats.html render: {t1-t0:.3f}s")
+    return resp
 
 @app.get("/comments", response_class=HTMLResponse)
-def comments_page(request: Request):
+async def comments_page(request: Request):
     """Страница всех комментариев жителей"""
-    all_comments = get_all_comments()
-    
-    return templates.TemplateResponse("comments.html", {
+    all_comments = get_all_comments_cached()
+    t0 = time.time()
+    resp = templates.TemplateResponse("comments.html", {
         "request": request,
         "comments": all_comments,
         "total_count": len(all_comments)
     })
+    t1 = time.time()
+    print(f"[PROFILE] Jinja2 comments.html render: {t1-t0:.3f}s")
+    return resp
 
 @app.get("/consent", response_class=HTMLResponse)
 def consent(request: Request):

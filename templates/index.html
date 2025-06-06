@@ -378,6 +378,24 @@
             </div>
             <a href="/stats" class="stats-btn">Статистика</a>
         </header>
+
+        <div class="card card-yellow-bg" style="border-left: 5px solid #ffe58f;">
+            <div class="answers-box">
+                <h2>
+                    <span style="font-size:1.3em; margin-right:8px;">📝</span>
+                    <strong>Опрос жителей о будущем управления посёлком</strong>
+                </h2>
+                <ul>
+                    <li>Это опрос для выяснения мнения жителей о необходимости создания нового юридического лица (СНТ) для управления нашим посёлком.</li>
+                    <li>В данный момент ДНП "Клеймёново-2" находится на стадии ликвидации, и по факту никто не представляет интересы посёлка.</li>
+                    <li>Ниже приведены факты и данные о ходе ликвидации.</li>
+                    <li>Просим пройти опрос, чтобы понять — нужно ли создавать новое СНТ или оставить всё как есть.</li>
+                </ul>
+                <div class="highlight" style="background: #fffbe6; border-left: 4px solid #ffe58f; margin-top: 18px;">
+                    <strong>Важное:</strong> создание нового СНТ — это не обязательство, а только возможность. Если СНТ не создавать, старый ДНП будет ликвидирован, и возможны юридические последствия (например, уберут субсидию на свет).
+                </div>
+            </div>
+        </div>
         <div class="card card-red-bg situation-card" style="border-left: 5px solid #e74c3c;">
             <div class="answers-box">
                 <h2>🚨 Текущая ситуация</h2>
@@ -479,11 +497,19 @@
                     <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="kadastr">Кадастровый номер участка</label>
-                    <input type="text" id="kadastr" name="kadastr" required 
-                           pattern="^\d{2}:\d{2}:\d{6}:\d{4}$"
-                           placeholder="50:XX:XXXXXX:XXXX"
-                           title="Кадастровый номер должен быть в формате XX:XX:XXXXXX:XXXX (где X - цифры)">
+                    <label for="kadastr_select">Кадастровый номер участка</label>
+                    <select id="kadastr_select" name="kadastr_select" required>
+                        <option value="">Выберите вариант</option>
+                        <option value="has">Указать кадастровый номер</option>
+                        <option value="none">Нет кадастрового номера</option>
+                    </select>
+                    <input type="text" id="kadastr" name="kadastr" style="display:none; margin-top:10px;"
+                           pattern="^\d{2}:\d{2}:\d{7}:\d{4}$"
+                           placeholder="50:XX:XXXXXXX:XXXX"
+                           title="Кадастровый номер должен быть в формате XX:XX:XXXXXXX:XXXX (где X - цифры)">
+                    <div class="highlight" style="margin-top:10px;">
+                        Ответы на вопросы ниже будут учтены только если вы укажете кадастровый номер. Без кадастрового номера в статистики учитываются ответы на вопросы второй страницы.
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="snt_support">Готовы ли вы участвовать в создании нового СНТ?</label>
@@ -492,6 +518,7 @@
                         <option value="Да">Да</option>
                         <option value="Нет">Нет</option>
                         <option value="Затрудняюсь">Затрудняюсь</option>
+                        <option value="Оставить всё как есть">Оставить всё как есть</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -548,6 +575,30 @@
             }
             e.target.value = formatted;
         });
+        // --- Кадастровый номер: логика выпадающего списка ---
+        const kadastrSelect = document.getElementById('kadastr_select');
+        const kadastrInput = document.getElementById('kadastr');
+        const sntSupportGroup = document.getElementById('snt_support').closest('.form-group');
+        const paymentReadyGroup = document.getElementById('payment_ready').closest('.form-group');
+        kadastrSelect.addEventListener('change', function() {
+            if (this.value === 'has') {
+                kadastrInput.style.display = '';
+                kadastrInput.required = true;
+                sntSupportGroup.style.display = '';
+                paymentReadyGroup.style.display = '';
+            } else {
+                kadastrInput.style.display = 'none';
+                kadastrInput.required = false;
+                kadastrInput.value = '';
+                kadastrInput.classList.remove('input-error', 'input-success');
+                // Скрываем вопросы про СНТ и взносы
+                sntSupportGroup.style.display = 'none';
+                paymentReadyGroup.style.display = 'none';
+                // Сбрасываем значения
+                document.getElementById('snt_support').value = '';
+                document.getElementById('payment_ready').value = '';
+            }
+        });
         // Обработка отправки формы
         document.getElementById('survey-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -564,6 +615,10 @@
                 } else {
                     data[key] = value;
                 }
+            }
+            // --- Кадастровый номер: если не выбран, пишем null ---
+            if (data.kadastr_select === 'none') {
+                data.kadastr = null;
             }
             
             // --- Проверка незавершенных анкет ---
@@ -702,7 +757,7 @@
             return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
         }
         function validateKadastr(kadastr) {
-            return /^\d{2}:\d{2}:\d{6}:\d{4}$/.test(kadastr.trim());
+            return /^\d{2}:\d{2}:\d{7}:\d{4}$/.test(kadastr.trim());
         }
         function setValidationClass(input, valid) {
             input.classList.remove('input-error', 'input-success');
